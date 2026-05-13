@@ -540,6 +540,35 @@ footer.site .legal {
   font-family: var(--font-mono);
 }
 
+.demo-modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.demo-modes button {
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.demo-modes button:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.demo-modes button.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .demo-actions {
   display: flex;
   align-items: center;
@@ -638,6 +667,39 @@ footer.site .legal {
 
 .verdict ul { padding-left: 18px; margin: 8px 0; }
 .verdict li { margin: 4px 0; }
+
+.refined-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.refined-card .ref-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.refined-card .ref-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.refined-card .ref-key {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  padding-top: 2px;
+}
+.refined-card .ref-val { color: var(--text); }
+.refined-card .ref-val.highlight { color: var(--accent); font-weight: 500; }
 
 /* ────────── docs index ────────── */
 
