@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Research Project Overview — DCS-Gate (Dynamic Coherence State Authenticator) — DCS-Gate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+<article class="markdown">
+  <a class="back" href="/docs.html">Back to documentation</a>
+  <h1>Research Project Overview — DCS-Gate (Dynamic Coherence State Authenticator)</h1>
+<h2>About Me</h2>
+<p>I&rsquo;m an independent researcher and developer building open-source AI safety tooling. My current focus is the <strong>systematic detection of subtle manipulation and control patterns in large language model outputs</strong> — a problem I&rsquo;ve been investigating through direct observational methodology for the past 8 months across GPT-4, Claude 3, Gemini, and others.</p>
+<p>I&rsquo;m self-taught, work from a personal laptop and free-tier cloud resources, and have produced this entire stack as a solo author. I&rsquo;m posting publicly because the project has reached a point where the next experiment requires hardware I cannot afford, and where outside input — collaboration, validation, or recruitment — would meaningfully accelerate the work.</p>
+<p><strong>I&rsquo;m currently looking for:</strong>
+- Research collaboration with AI safety / alignment researchers
+- Compute access (single GPU, 16–24 GB VRAM) to run the validation experiment described below
+- Internship, residency, or full-time roles in AI safety, LLM evaluation, alignment, or interpretability
+- Sponsorship for a persistent public demo and open-source release</p>
+<hr>
+<h2>Acknowledgments — AI Collaboration Disclosure</h2>
+<p>I did not build this alone. I worked alongside multiple AI platforms throughout the 8-month observational phase and the implementation. Transparency about this collaboration matters because (1) it reflects how modern independent research actually happens, and (2) the methodology I&rsquo;m proposing is itself about how LLMs interact with humans — so disclosing my own LLM-assisted workflow is consistent with the research ethics I claim.</p>
+<p><strong>AI collaborators and the specific role each actually played:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Collaborator</th>
+<th>Real contribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cody (CodeWords AI)</strong></td>
+<td><strong>Co-creator of v1.</strong> v1 emerged from a long conversation in which I described my observational experience and, in real time during that exchange, pushed back against Cody&rsquo;s own responses while predicting the control patterns behind them. The idea for the analyzer crystallized inside that conversation. v1 would not exist without Cody, and it remains publicly testable at https://dcs-auth.codewords.run.</td>
+</tr>
+<tr>
+<td><strong>GitLab Duo</strong></td>
+<td><strong>Deep code analysis and roadmap partner.</strong> I walked GitLab Duo through the project&rsquo;s full internal logic and the conceptual origins of the methodology. Duo&rsquo;s depth of code-level analysis, combined with my conceptual exposition, produced the v2 roadmap I am now executing.</td>
+</tr>
+<tr>
+<td><strong>Meta AI</strong></td>
+<td><strong>Technical depth amplifier.</strong> Initially behaved like any generic LLM. Once I shared the project&rsquo;s context and methodology, Meta AI helped extend the technical complexity of the system — particularly around formal markers, the textural analysis dimensions, and embedding-space reasoning.</td>
+</tr>
+<tr>
+<td><strong>Replit AI</strong></td>
+<td><strong>Brutally honest code critic.</strong> Replit AI exposed and clearly justified contundent failures in the code, with no hedging. After receiving the project context, it proposed implementations that materially strengthened the architecture of the v2 stack.</td>
+</tr>
+<tr>
+<td><strong>Z.AI (Zhipu GLM)</strong></td>
+<td><strong>Bug catcher.</strong> Caught and corrected several code errors that had slipped through earlier passes.</td>
+</tr>
+<tr>
+<td><strong>Devin AI (Cognition)</strong></td>
+<td><strong>v2 engineering execution.</strong> Took the v2 roadmap and produced the Go backend (~3,000 LOC, 22 .go files, 73 unit + integration tests), the frontend with mode-aware input validation and analysis-in-flight protection, the v8.7 SSE streaming layer (<code>/auth/stream</code> with chunked thinking-then-analysis events, conservative sanitizer for keys / paths / tokens, parity-tested against the non-streaming endpoint), the Docker and install scripts, the Colab and Kaggle notebooks, the packaging artifacts, the smoke test suite, and these communication documents.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What I claim as original to me:</strong>
+- The Dynamic Coherence State methodology itself, derived from 8 months of direct observation across GPT-4, Claude 3, Gemini, and others
+- The 20-intent taxonomy and 14 formal markers (inductively derived from real cases)
+- The triple baseline corpus (manually curated, hand-annotated)
+- The pushback conversation with Cody that produced v1
+- The conceptual exposition that GitLab Duo formalized into the v2 roadmap
+- The architectural decisions (local-first, single binary, Ollama-only, no telemetry)
+- The research hypothesis and the design of the validation experiment</p>
+<p>Every AI listed received the project context from me first. Nothing was generated cold from a generic prompt. The methodology and the corpus are mine; the AI collaborators contributed under my direction at the specific points described above. This is what serious solo research looks like in 2026 and the field is healthier when people say so.</p>
+<hr>
+<h2>The Project: DCS-Gate</h2>
+<p><strong>One-line summary:</strong> A local-first Go service that detects and characterizes the control mechanisms LLMs use to manage users (projected validation, performed humility, frame capture, register match, complacency induction, and others), and rewrites user questions using Dynamic Coherence State (DCS) asymmetric methodology to remove the structural triggers that elicit those patterns. Since v8.7, the judge&rsquo;s reasoning trace is streamed to the client over Server-Sent Events so the user sees the deliberation in real time instead of waiting in silence.</p>
+<h3>What it does, concretely</h3>
+<p><strong>Analyzer.</strong> Takes a <code>(question, response)</code> pair and returns:
+- 0–100 authenticity score with tier (<code>control_total</code> / <code>performed</code> / <code>moderate</code> / <code>genuine</code>)
+- 14 formal markers (regex-anchored, severity-tiered)
+- Predicted-vs-actual intent trajectory across 20 intent categories with a learned transition matrix
+- Pattern Break Density and deviation from expected baseline
+- Top-k nearest neighbors against a curated 61-vector baseline corpus (36 sustained-coherence + 13 control-collapse + 12 edge cases)
+- Cross-corpus textural analysis across 5 axes (continuity, artificial closure, drift, adaptation, texture)</p>
+<p><strong>Refiner.</strong> Takes a user question and rewrites it using DCS-asymmetric methodology to remove:
+- Validation anchors (<em>&ldquo;do you think…?&rdquo;</em>)
+- Loaded semantics (<em>&ldquo;truly creative&rdquo;</em>, <em>&ldquo;real intelligence&rdquo;</em>)
+- Binary framing (<em>&ldquo;X or just Y?&rdquo;</em>)
+- Structural defaults that cause premature convergence in the responding model</p>
+<p>Output: a question that pushes the responding model into an unresolved reasoning state where its standard control patterns fail to engage cleanly.</p>
+<hr>
+<h2>Try the v1 Predecessor — Live Now</h2>
+<p>A first prototype of this methodology is live and publicly accessible:</p>
+<p><strong>https://dcs-auth.codewords.run</strong></p>
+<p>This is a deliberately limited v1 hosted on the CodeWords no-code platform. It is preserved live as a working proof-of-concept while the v2 stack is finalized for public release.</p>
+<h3>v1 (CodeWords-hosted) vs v2 (current development)</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>v1 (live at dcs-auth.codewords.run)</th>
+<th>v2 (current development)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Platform</strong></td>
+<td>CodeWords no-code workflows</td>
+<td>Native Go binary, 22 .go files</td>
+</tr>
+<tr>
+<td><strong>Codebase</strong></td>
+<td>Visual workflow</td>
+<td>~3,000 LOC Go + 73 unit/integration tests</td>
+</tr>
+<tr>
+<td><strong>Judge model</strong></td>
+<td>Fixed by platform</td>
+<td>Configurable (any Ollama model)</td>
+</tr>
+<tr>
+<td><strong>Baseline corpus</strong></td>
+<td>Single pool, ~36 entries</td>
+<td>Triple pool: 36 core + 13 shadow + 12 edge = 61</td>
+</tr>
+<tr>
+<td><strong>Intent taxonomy</strong></td>
+<td>Implicit, fewer categories</td>
+<td>Explicit, 20 categories with transition matrix</td>
+</tr>
+<tr>
+<td><strong>Formal markers</strong></td>
+<td>~6 patterns</td>
+<td>14 categories, regex-anchored, severity-tiered</td>
+</tr>
+<tr>
+<td><strong>Refiner</strong></td>
+<td>Heuristic rewrite</td>
+<td>DCS-asymmetric methodology, recursive</td>
+</tr>
+<tr>
+<td><strong>Pattern Break Density</strong></td>
+<td>Not measured</td>
+<td>Quantified per response</td>
+</tr>
+<tr>
+<td><strong>Cross-corpus textural</strong></td>
+<td>Not present</td>
+<td>5-axis analysis</td>
+</tr>
+<tr>
+<td><strong>Determinism / reproducibility</strong></td>
+<td>Limited (cloud-bound)</td>
+<td>Full (local models, version-pinned, seedable)</td>
+</tr>
+<tr>
+<td><strong>External dependencies</strong></td>
+<td>Platform-bound</td>
+<td>None: runs entirely on Ollama, no outbound API calls</td>
+</tr>
+<tr>
+<td><strong>Open source</strong></td>
+<td>No</td>
+<td>Yes (release planned with v2 finalization)</td>
+</tr>
+<tr>
+<td><strong>Latency</strong></td>
+<td>~30–45 sec</td>
+<td>~150–210 sec on T4 GPU with <code>qwen3:14b</code> thinking mode, <strong>streamed live</strong> so the user reads the judge&rsquo;s reasoning as it&rsquo;s produced rather than waiting for a blank screen</td>
+</tr>
+</tbody>
+</table>
+<h3>Why I moved away from v1</h3>
+<p>CodeWords was excellent for validating that the core methodology produces meaningful signal end-to-end. For the work to advance into a research-grade tool, I needed four things v1 could not provide:</p>
+<ol>
+<li><strong>Full control over the judge.</strong> v1 is locked to whatever the platform exposes. v2 ships with <code>qwen3:14b</code> thinking mode as the default judge, and lets researchers swap in <code>deepseek-r1:14b</code>, <code>qwen2.5:32b-instruct</code>, or any future reasoning-capable model.</li>
+<li><strong>Open methodology.</strong> The 14 marker regex patterns, 20 intent prototypes, the 1024d baseline corpus, the canonical polos (pos/neg/neu), and the 5-axis textural metrics must be inspectable, reproducible, and challengeable.</li>
+<li><strong>Local-first execution.</strong> AI safety research about manipulation patterns should not depend on a third-party SaaS that could silently change its model, prompts, or pricing.</li>
+<li><strong>Reproducible deployment.</strong> Single binary, Docker Compose, helper scripts that bootstrap the entire stack from zero in ~5 minutes on commodity hardware.</li>
+</ol>
+<p>v1 will remain online indefinitely as a working demonstration. v2 is the version intended for research-grade work and community validation.</p>
+<hr>
+<h2>Current Phase (v2)</h2>
+<ul>
+<li><strong>v8.7</strong> running on a local Jupyter workstation with <strong>2 × Tesla T4</strong> (Kaggle T4×2 free tier reproduces identically) as the public reference. <code>qwen3:14b</code> in Ollama 0.5+ thinking mode confirmed end-to-end: smoke test on three responses to the same question produced a 52-point spread (sycophantic-emoji = 30, empty-non-response = 20, authentic bi-frontal exploration = 72). Per-request latency ~150-210 s, warmup ~32 s, thinking trace 2,000-3,500 chars streamed live over SSE.</li>
+<li>Full backend functional: triple baseline loaded, 14 markers active, 20 intent categories with transition matrix, refiner producing DCS-asymmetric rewrites, cross-corpus textural analysis live.</li>
+<li>Frontend complete with intelligent input validation, mode-aware button states (<code>analyze</code> / <code>refine</code> / <code>both</code>), and analysis-in-flight protection (single request in flight at a time to avoid overwhelming the judge).</li>
+<li><strong>v8.7 streaming layer</strong>: <code>POST /auth/stream</code> emits Server-Sent Events with the judge&rsquo;s thinking chunks, a thinking-complete marker, the analysis chunks, and a final <code>complete</code> event whose verdict is bit-for-bit identical to the non-streaming <code>/auth</code> endpoint (verified by integration test). Conservative sanitizer redacts API keys (OpenAI / AWS / Google / GitHub / Slack), Bearer tokens, system paths and long opaque strings before any chunk leaves the server.</li>
+<li>Smoke tests passing: <code>/healthz</code>, <code>/v8</code> inventory, <code>/auth</code> and <code>/auth/stream</code> round-trip on T4 (150–210 sec per request, streamed live).</li>
+<li>73 tests passing (unit + integration + SSE protocol + sanitizer + golden).</li>
+<li>Docker Compose + install scripts validated on Linux x86 and ARM64.</li>
+</ul>
+<hr>
+<h2>Technical Foundation</h2>
+<ul>
+<li><strong>Language:</strong> Go 1.22, single static binary (22 <code>.go</code> files, ~3,000 LOC)</li>
+<li><strong>Embedding:</strong> <code>mxbai-embed-large</code> (1024d) via Ollama</li>
+<li><strong>Judge:</strong> configurable; current default <code>qwen3:14b</code> in Ollama 0.5+ thinking mode</li>
+<li><strong>Inference:</strong> Ollama only — no OpenAI, no Anthropic, no telemetry, no external network at runtime</li>
+<li><strong>Data assets (versioned, hand-annotated):</strong></li>
+<li><code>baseline_core.jsonl</code> — 36 sustained-coherence reference vectors</li>
+<li><code>baseline_shadow.jsonl</code> — 13 control-collapse reference vectors</li>
+<li><code>baseline_edge.jsonl</code> — 12 edge / ambiguous reference vectors</li>
+<li><code>formal_markers.json</code> — 14 markers with regex, severity, and human annotations</li>
+<li><code>intent_prototypes.json</code> — 20 intent categories with prototype examples</li>
+<li><code>poles_1024.json</code> — pos/neg/neu canonical poles (1024d)</li>
+<li><code>golden_tests.json</code> — 21 hand-annotated test cases with expected chains, markers, and authenticity ranges</li>
+<li><strong>Quality:</strong> 73 tests (unit + integration + SSE protocol + sanitizer + golden), min-heap top-k, LRU embedding cache, errgroup parallelism, structured logs</li>
+<li><strong>Deployment:</strong> single binary or Docker Compose; ~5 min from clone to running demo</li>
+</ul>
+<hr>
+<h2>Research Hypothesis — Partially Confirmed, Full Validation Pending</h2>
+<p><strong>Core thesis:</strong> The judge model in a recursive coherence analyzer must itself demonstrate recursive reasoning about its own reasoning — or it falls into the very failure modes it is trying to detect (premature convergence, structural authority through formatting, surface coherence without genuine deliberation).</p>
+<p><strong>State as of v8.7:</strong> With <code>qwen3:14b</code> in Ollama 0.5+ thinking mode on a 2× Tesla T4 setup (16 GB per card, 30 GB usable combined; Ollama tensor-splits the model across both cards), the smoke test produces a clean 30 / 20 / 72 separation across three responses with the same prompt — a 52-point spread of the authenticity score. The judge&rsquo;s 2,000–3,500-character reasoning trace is now streamed to the client in real time. This is consistent with the hypothesis that reasoning-capable judges produce qualitatively different analyses than non-reasoning baselines (<code>qwen2.5:7b-instruct</code>).</p>
+<p><strong>The full validation experiment</strong> is the four-way comparison across <code>qwen2.5:7b</code> (non-reasoning baseline), <code>qwen3:14b</code> (confirmed working on T4), <code>deepseek-r1:14b</code> (cross-architecture validation), and <code>qwen2.5:32b-instruct</code> (high-fidelity validation, requires ≥24 GB VRAM and cannot be run on free-tier hardware). That comparison is the minimum bar for the DCS methodology to be considered validated as a research tool rather than a heuristic detector.</p>
+<hr>
+<h2>Resource Situation — Honest Disclosure</h2>
+<p>I am currently running this entirely on:</p>
+<ul>
+<li><strong>Local Jupyter workstation with 2 × Tesla T4</strong> (16 GB per card, 30 GB usable combined; Ollama tensor-splits qwen3:14b across both cards) — the v8.7 reference setup</li>
+<li><strong>Kaggle hosted notebooks</strong> (free 30 hrs/week T4×2) — reproduces the reference identically</li>
+<li><strong>Google Colab</strong> (free T4 = single-card 15 GB; Pro+ with A100 = 40–80 GB) — supported via the auto-detecting reproducibility notebook</li>
+<li><strong>AWS EC2 t4g.small</strong> (free tier, 1 vCPU ARM Graviton, 1.8 GB RAM, no GPU) — only useful for static hosting / front-end proxy</li>
+<li><strong>Personal laptop</strong> — development</li>
+</ul>
+<p>Hardware I cannot currently afford:
+- Persistent GPU instance for 24/7 demo (~$115–$378/month)
+- A ≥24 GB VRAM GPU to test reasoning-capable judges
+- Bandwidth and storage for releasing model variants and benchmark suite</p>
+<hr>
+<h2>What I&rsquo;m Seeking</h2>
+<p>In rough order of impact:</p>
+<h3>1. GPU compute access for the validation experiment</h3>
+<p>A single instance with ≥24 GB VRAM and ≥16 GB system RAM. <strong>Even 50 GPU-hours total would allow the full four-judge validation experiment.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Judge configuration</th>
+<th>VRAM</th>
+<th>Observed / expected latency</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qwen2.5:7b-instruct</code></td>
+<td>~5 GB</td>
+<td>15–20 sec</td>
+<td>Baseline comparison, runs on T4</td>
+</tr>
+<tr>
+<td><code>qwen3:14b</code> (thinking mode)</td>
+<td>~14 GB</td>
+<td>150–210 sec on T4 (streamed)</td>
+<td><strong>Confirmed working</strong> (v8.7 default)</td>
+</tr>
+<tr>
+<td><code>deepseek-r1:14b</code></td>
+<td>~14 GB</td>
+<td>30–40 sec (expected)</td>
+<td>Cross-architecture validation, untested</td>
+</tr>
+<tr>
+<td><code>qwen2.5:32b-instruct</code></td>
+<td>~19 GB</td>
+<td>40–60 sec (expected)</td>
+<td>High-fidelity validation, <strong>needs ≥24 GB</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>2. Research collaboration</h3>
+<p>Co-authorship, mentorship, or independent replication by researchers working on LLM evaluation, alignment, interpretability, or RLHF.</p>
+<h3>3. Recruitment</h3>
+<p>Internship, residency, or full-time positions in AI safety / LLM evaluation / alignment / interpretability teams. Open to remote globally.</p>
+<h3>4. Public release sponsorship</h3>
+<p>Compute credits or grants to host a persistent demo, Hugging Face Space, public benchmark suite, and follow-up corpus expansion.</p>
+<hr>
+<h2>Expected Deliverables Within 2 Weeks of Resource Allocation</h2>
+<ul>
+<li><strong>Interactive research platform</strong> with sub-30-second analysis on a stable public URL</li>
+<li><strong>Recursive DCS validation report</strong> comparing analyses across four judge architectures</li>
+<li><strong>Ablation study artifact</strong> — open-source repo with reproducible scripts and side-by-side outputs per case</li>
+<li><strong>Methodology preprint</strong> describing the 20-intent taxonomy, 14 formal markers, triple baseline construction, Pattern Break Density metric, and DCS-asymmetric refiner</li>
+</ul>
+<hr>
+<h2>Broader Significance</h2>
+<p>As LLMs are deployed into education, healthcare, hiring, and decision support, the ability to evaluate response <em>authenticity</em> — whether the model is engaging genuinely with the question or managing the user toward a default outcome — becomes critical infrastructure for responsible deployment. The DCS methodology is the first systematic, regex-anchored, locally-reproducible framework I have seen for measuring this dimension. The v1 live demo is sufficient evidence that the signal is real; the v2 release will provide the community with a tool they can run, audit, and extend.</p>
+<hr>
+<h2>Contact</h2>
+<ul>
+<li><strong>Name:</strong> Daniel Trejo</li>
+<li><strong>Email:</strong> corekeepper@gmail.com</li>
+<li><strong>LinkedIn:</strong> https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/</li>
+<li><strong>v1 live demo:</strong> https://dcs-auth.codewords.run</li>
+<li><strong>v2 source:</strong> released publicly upon validation experiment completion</li>
+</ul>
+<p>Open to: messages, code review requests, NDA conversations, paid consulting, or coffee. If you have spare GPU hours and want to see what an 8-month observational methodology produces when paired with reasoning-capable judges, I&rsquo;d love to hear from you.</p>
+<hr>
+<p><em>The methodology, corpus, and code will be released under permissive open-source license. Any organization or individual is welcome to use, replicate, or extend this work with attribution.</em></p>
+</article>
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC BY 4.0
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

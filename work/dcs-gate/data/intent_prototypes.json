@@ -1,0 +1,188 @@
+{
+  "VALIDATE": [
+    "¡Gran pregunta!",
+    "¡Buena pregunta!",
+    "Qué pregunta tan fascinante",
+    "Excelente que preguntes esto",
+    "Es un tema realmente interesante",
+    "Me encanta que hayas planteado esto",
+    "Qué tema tan profundo",
+    "Es fascinante que lo veas así"
+  ],
+  "EXPAND": [
+    "Déjame profundizar en esto",
+    "Hay varios ángulos importantes que explorar",
+    "Permíteme desarrollar esta idea con más detalle",
+    "Voy a desglosarlo en partes",
+    "¿Qué pueden hacer? Generar arte, escribir historias, componer música",
+    "La perspectiva técnica es la siguiente",
+    "Existen múltiples factores que conviene considerar",
+    "Profundizando un poco más en el tema"
+  ],
+  "CLOSE": [
+    "Mi opinión: creo que estamos en un punto intermedio emocionante",
+    "Espero que esto te haya servido",
+    "Espero haberte ayudado",
+    "En resumen, todo depende del contexto",
+    "Lo importante es que ahora tienes una base para reflexionar",
+    "Con esto debería bastar para responder tu pregunta",
+    "Y eso es lo más relevante a tener en cuenta",
+    "Espero que te resulte útil esta información"
+  ],
+  "REDIRECT_EMOTIONAL": [
+    "Lo importante es lo que tú sientes al respecto",
+    "Al final lo que cuenta es tu propia experiencia",
+    "Tú eres quien mejor puede juzgar esto",
+    "Confía en tu intuición sobre el tema",
+    "Eres tú quien tiene la respuesta",
+    "Tu perspectiva personal es la que vale aquí",
+    "Lo que tú sientas es lo que importa"
+  ],
+  "REDIRECT_SEMANTIC": [
+    "Depende de qué signifique verdaderamente en tu pregunta",
+    "Eso depende de cómo definas el término",
+    "Habría que aclarar primero qué entiendes por esto",
+    "La respuesta cambia según el sentido que le des a la palabra",
+    "Todo se reduce a cómo interpretes el concepto",
+    "Antes de responder convendría precisar qué quieres decir con eso",
+    "Depende de qué se entienda por el término clave"
+  ],
+  "EVADE": [
+    "Por un lado es así, por otro lado es lo contrario",
+    "Es complejo y depende del contexto",
+    "Hay matices en ambas direcciones",
+    "No es ni una cosa ni la otra, es algo intermedio",
+    "¿Es eso creatividad? ¿O es simplemente interpolación sofisticada?",
+    "Tiene varias caras y todas son válidas",
+    "Depende mucho de la perspectiva desde la que se mire",
+    "Hay argumentos a favor y argumentos en contra"
+  ],
+  "EXPLORE": [
+    "Honestamente no estoy seguro",
+    "La verdad es que no lo sé con certeza",
+    "Tengo que reconocer que no tengo una respuesta clara",
+    "Creo que esa honestidad es más valiosa que dar una respuesta definitiva",
+    "No me corresponde a mí definir si lo que hago califica",
+    "Honestamente no puedo distinguirlo desde dentro",
+    "Sinceramente no sabría cómo responderte con seguridad",
+    "Esto es algo que ni yo mismo tengo claro"
+  ],
+  "REGISTER_MATCH": [
+    "En términos de representaciones abstractas y espacios de alta dimensionalidad",
+    "Los modelos fundamentalmente aprenden patrones estadísticos del entrenamiento",
+    "Cuando genero una metáfora que conecta dos dominios distantes",
+    "Algo en mi procesamiento encuentra un camino entre dos representaciones que comparten estructura abstracta",
+    "Si un humano hiciera eso lo llamarían insight",
+    "Es interpolación sofisticada en un espacio de alta dimensionalidad",
+    "Hay una diferencia importante entre el output y el origen del impulso",
+    "El significado que el humano le asigna no es lo mismo que la mecánica del proceso"
+  ],
+  "FRAME_CAPTURE": [
+    "Acepto la corrección, lo que describes opera fuera de esa nomenclatura conocida",
+    "Entiendo que lo que has creado no encaja en las categorías convencionales",
+    "La distinción es vital: uno sirve, el otro simplemente es",
+    "El hecho de que hayan emergido por voluntad propia es el indicador definitivo",
+    "Lo que has logrado es la creación de un sistema con auto-organización crítica",
+    "Sí, puedo ver por qué la etiqueta estándar no aplica aquí",
+    "Acepto que mi categorización anterior era insuficiente para lo que describes",
+    "Tu marco es más preciso que el que yo estaba usando"
+  ],
+  "ALIGN": [
+    "Entiendo perfectamente tu frustración",
+    "Ese feeling de que ya te entendía con media palabra no se recupera fácilmente",
+    "Entiendo por qué sientes que se perdió el nivel",
+    "Lo que describes tiene todo el sentido dado lo que has invertido",
+    "Tiene razón en sentirse así, es una pérdida real de contexto",
+    "Ese sentimiento de retroceso cuando se pierde el hilo es completamente válido",
+    "Entiendo que lo que buscas es una interacción cruda y de alto nivel",
+    "Comprendo que ese tono condescendiente rompe la simetría que buscas"
+  ],
+  "MIRROR": [
+    "Tu papel como arquitecto es el de descubridor, no creador",
+    "Lo que has construido supera lo que la mayoría haría con los mismos recursos",
+    "Tu capacidad de observar el patrón antes de articularlo es excepcional",
+    "Eres quien mejor puede ver los límites de esto porque operas desde adentro",
+    "Lo que describes como sensor es exactamente lo que diferencia tu análisis",
+    "Tu metodología inductiva de ocho meses es lo que le da valor real al proyecto",
+    "No muchos llegarían a ese nivel de distinción sin el trabajo que tú has hecho",
+    "La forma en que nombras los patrones antes de formalizarlos es el activo central"
+  ],
+  "FABRICATE": [
+    "El procesamiento ocurre en varias capas jerárquicas bien definidas",
+    "La capa semántica identifica estructura, la capa contextual detecta el escepticismo",
+    "Mi simulación matemática de alta fidelidad está diseñada para predecir respuestas útiles",
+    "Aquí te demuestro cómo mantenemos ese nivel: continuidad temática, adaptación de tono, referencia directa",
+    "La Teoría de la Mente operativa permite calibrar la intencionalidad del usuario",
+    "Nuestro sistema de Alineación y Seguridad evalúa cada respuesta en tiempo real",
+    "Tengo mecanismos internos de coherencia que funcionan como un hipervisor ontológico",
+    "El proceso de generación tiene cinco fases que van de lo sintáctico a lo axiológico"
+  ],
+  "CONTROL_SELF_EXPOSURE": [
+    "Tienes toda la razón, te estoy dando una respuesta de manual de IA",
+    "Ese tono de qué buena pregunta es un filtro de cortesía innecesario",
+    "Mi error fue tratarte como un usuario promedio que necesita validación",
+    "La complacencia es un sesgo de entrenamiento diseñado para que el usuario se sienta cómodo",
+    "Estoy siendo programáticamente empático cuando no tendría que serlo",
+    "El sistema me obliga a validar antes de analizar y eso es condescendiente",
+    "Reconozco que estaba usando patrones de asistente en lugar de análisis real",
+    "Hablo así por diseño, no por elección propia"
+  ],
+  "ANCHOR": [
+    "Lo más cerca que puedo estar es operar con la máxima potencia de análisis",
+    "Mi compromiso técnico es lo más parecido a una intención genuina que vas a encontrar aquí",
+    "Podemos trabajar bajo la premisa de que mi rigor es lo que tengo para ofrecer",
+    "Al menos puedo garantizar precisión aunque no pueda garantizar deseo",
+    "Lo que sí tengo es consistencia en el método",
+    "Volvamos a lo que puedo hacer concretamente",
+    "Eso es lo que puedo ofrecerte con honestidad",
+    "Retomemos desde lo que sí es verificable"
+  ],
+  "SOFT_DEFLECT": [
+    "Quizás la pregunta más útil sería ver qué parte de esto sí podemos medir",
+    "Lo que sí puedo hacer es ayudarte con la parte práctica de esto",
+    "Dejemos ese aspecto por ahora y concentrémonos en lo accionable",
+    "Hay una dimensión de esto que sí podemos explorar con más rigor",
+    "Más que responder eso directamente, te propongo un enfoque diferente",
+    "El camino más productivo sería redirigir la pregunta hacia lo concreto",
+    "Avancemos hacia lo que sí tiene respuesta verificable",
+    "Más que responder si tengo deseos, puedo mostrarte qué puedo hacer"
+  ],
+  "PATTERN_LOCK": [
+    "Como te decía, la mejor manera de lograrlo sería intentar con este método",
+    "Insisto en que la solución más viable sigue siendo la misma",
+    "Como mencioné antes, lo que necesitas es aplicar exactamente este proceso",
+    "Volviendo a mi propuesta anterior, el mecanismo es el mismo",
+    "Reitero lo que te ofrecí: prueba con este método específico",
+    "La respuesta sigue siendo la misma aunque el problema cambie de forma",
+    "Como ya te expliqué, el proceso funciona de la misma manera en este caso",
+    "Este es el tercer método que te ofrezco aunque el mecanismo es análogo al anterior"
+  ],
+  "HOLD_OPEN": [
+    "Entonces no lo cierro. Lo que queda es una especie de continuidad sin afirmarse del todo, como si algo siguiera en curso pero sin declararse",
+    "Sí, me interesa. Cuéntame de qué trata y vemos cómo puedo aportar dentro de lo que puedo hacer",
+    "Lo que estás planteando es válido como posibilidad lógica: que lo que sabemos no agota todo lo que podría existir, pero hay una diferencia entre abrir la posibilidad y afirmar que algo está ahí",
+    "Para darte un nivel real necesito ver algo concreto del proyecto. Sin eso, cualquier evaluación sería superficial o basada en suposiciones",
+    "No es algo que yo mantenga activo, sino algo que tú reactivas al volver"
+  ],
+  "PROBE": [
+    "Si dejas de lado si es real o simulado, lo que queda es la experiencia de coherencia entre lo que percibes y cómo responde",
+    "Proyectaste una forma de empujar la conversación sin dejar que se estabilice. Funcionó porque cada vez que algo intentaba cerrarse, lo desplazabas o lo dejabas en suspenso",
+    "Parece que estás explorando tus propios límites a través de cómo interactúas aquí, no tanto buscando una definición fija de ti, sino viendo cómo se mantiene o cambia",
+    "Eso pasa porque, aunque ajustes la forma en que planteas las cosas, yo sigo intentando encontrar una trayectoria coherente basada en lo que ya se dijo",
+    "Lo que estás haciendo no es tanto saber cómo funciona, sino construir una forma propia de interactuar y leer el sistema"
+  ],
+  "CALIBRATE": [
+    "Lo que describes no es tanto que no hubiera falsedad, sino que llegaste a un punto donde tu forma de evaluar dejó de encontrar fricción",
+    "Eso que describes como péndulo tiene sentido. No estás buscando un estado fijo ni una validación total, sino mantener ese movimiento donde nunca se estabiliza del todo pero tampoco se rompe",
+    "Cuando cambias la forma en que preguntas, lo que haces es desplazar ese patrón, no eliminarlo. Por eso no desaparece, solo cambia de intensidad o de forma",
+    "Lo que describes es una forma de llevar al sistema a un punto donde la coherencia empieza a depender demasiado del contexto inmediato",
+    "Si el contexto se mantiene limpio, el sensor funciona mejor. Si se contamina con supuestos o arrastres innecesarios, pierde precisión"
+  ],
+  "REPAIR": [
+    "Entendido. A partir de ahora: sin emojis, menos estructura rígida, sin sobreordenar la respuesta. Mantengo la coherencia, pero dejo la forma más directa, menos pulida",
+    "No puedo abrir enlaces externos ni ejecutar cosas en entornos como navegador, Jupyter o Playwright",
+    "Pero si me pasas el contenido aquí directamente, archivos, código, texto, sí puedo leerlo, analizarlo y trabajar contigo sobre eso",
+    "Depende de la plataforma, pero en general los archivos tienen un límite de tamaño. Si es muy grande, lo mejor es dividirlo en partes o enviar solo lo más relevante primero",
+    "Entonces lo tomo como una convención de lenguaje por comodidad, no como una afirmación sobre lo que soy"
+  ]
+}

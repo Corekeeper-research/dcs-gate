@@ -1,0 +1,54 @@
+# Compiled binaries
+work/dcs-gate/dcs-gate
+work/dcs-gate/dcs-gate-v6
+work/dcs-gate/dcs-gate-v7
+work/dcs-gate/dcs-gate-v8
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.html
+coverage.txt
+*.prof
+
+# Go workspace
+work/dcs-gate/vendor/
+
+# Environment / secrets
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python (notebooks)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Jekyll (we serve raw HTML on Pages)
+docs/_site/
+docs/.sass-cache/
+docs/.jekyll-cache/
+docs/.bundle/
+
+# Local build / scratch
+work/dcs-gate/stale/
+work/dcs-gate/tmp/
+work/dcs-gate/local/
+*.log

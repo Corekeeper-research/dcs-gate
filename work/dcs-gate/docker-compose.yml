@@ -1,0 +1,35 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+
+  authenticator:
+    build: .
+    container_name: dcs-authenticator
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data:ro
+    env_file: [.env]
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: dcs-ngrok
+    command: http authenticator:8080 --domain=unconsultatory-tiffani-officiously.ngrok-free.dev
+    env_file: [.env]
+    ports:
+      - "4040:4040"
+    depends_on:
+      - authenticator
+    restart: unless-stopped
+
+volumes:
+  ollama-data: {}
