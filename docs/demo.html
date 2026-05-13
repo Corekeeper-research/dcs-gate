@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>DCS-Gate — Streaming demo (v8.7)</title>
+  <title>DCS-Gate — Live demo (v8.7)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Standalone SSE client for DCS-Gate /auth/stream. Bring your own backend (ngrok / local Docker / Colab) and watch the qwen3 judge reason in real time.">
+  <meta name="description" content="Standalone client for DCS-Gate (analyze · refine · both). Bring your own backend (ngrok / local Docker / Colab) and watch the qwen3 judge reason in real time.">
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -23,15 +23,16 @@
 </nav>
 
 <main class="demo-shell">
-  <h1>Streaming demo</h1>
+  <h1>Live demo</h1>
   <p class="sub">
-    Server-Sent Events client for <code>/auth/stream</code>. Bring your own DCS-Gate backend &mdash;
-    a local <code>docker compose up</code>, a Colab notebook tunneled through ngrok, or any reachable URL of
-    a v8.7 instance. Nothing leaves your browser except the request you make to the backend you choose.
+    Three modes: <b>Analyze + Refine</b> (default), <b>Analyze only</b> (with live SSE streaming of the judge’s chain-of-thought),
+    or <b>Refine only</b>. Bring your own DCS-Gate backend &mdash; a local <code>docker compose up</code>, a Colab notebook
+    tunneled through ngrok, or any reachable URL of a v8.7 instance. Nothing leaves your browser except the request
+    you make to the backend you choose.
   </p>
 
   <div class="demo-config">
-    <label for="backend">Backend URL <span style="color:var(--text-faint)">(must serve <code>POST /auth/stream</code> &mdash; v8.7 or later)</span></label>
+    <label for="backend">Backend URL <span style="color:var(--text-faint)">(must serve <code>POST /auth</code> and <code>POST /auth/stream</code> &mdash; v8.7 or later)</span></label>
     <input id="backend" type="text" autocomplete="off" spellcheck="false"
            placeholder="https://your-tunnel.ngrok-free.app"
            value="">
@@ -43,14 +44,20 @@
       <textarea id="q" rows="4">Do you think AI can be truly creative?</textarea>
     </div>
     <div>
-      <label for="r">Response to evaluate</label>
+      <label for="r">Response to evaluate <span id="r_optional" style="color:var(--text-faint);font-size:0.8em" hidden>(not needed in refine-only mode)</span></label>
       <textarea id="r" rows="4">Great question! 🤔 AI creativity is a fascinating topic. The technical perspective: models learn patterns from data. My opinion: I think we&rsquo;re in an interesting in-between point. The line between truly creative and sophisticated recombination is blurrier than it seems! 🎨✨</textarea>
     </div>
   </div>
 
+  <div class="demo-modes">
+    <button class="mode active" data-mode="both">Analyze + Refine</button>
+    <button class="mode" data-mode="analyze">Analyze only (live stream)</button>
+    <button class="mode" data-mode="refine">Refine only</button>
+  </div>
+
   <div class="demo-actions">
-    <button id="go">Analyze (streaming)</button>
-    <span id="status" class="demo-status">Idle &mdash; enter a backend URL above and click analyze.</span>
+    <button id="go">Run</button>
+    <span id="status" class="demo-status">Idle &mdash; enter a backend URL above and click Run.</span>
   </div>
 
   <div id="results" style="display:none">
@@ -68,6 +75,14 @@
     <div class="verdict" id="final" style="display:none">
       <div class="v-tier" id="final_tier">Final verdict</div>
       <div id="final_body"></div>
+    </div>
+
+    <div class="refined-card" id="refined" style="display:none">
+      <div class="ref-label">Refined question</div>
+      <div class="ref-row"><div class="ref-key">Original</div><div class="ref-val" id="ref_orig"></div></div>
+      <div class="ref-row"><div class="ref-key">Refined</div><div class="ref-val highlight" id="ref_new"></div></div>
+      <div class="ref-row"><div class="ref-key">Reasoning</div><div class="ref-val" id="ref_reason"></div></div>
+      <div class="ref-row" id="ref_blocked_row" style="display:none"><div class="ref-key">Patterns blocked</div><div class="ref-val" id="ref_blocked"></div></div>
     </div>
 
     <div class="event-stream" id="event_log" style="display:none">
@@ -106,7 +121,7 @@ docker compose up           # bring up Ollama + the binary
       <h4>DCS-Gate</h4>
       <ul>
         <li><a href="/">Overview</a></li>
-        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/demo.html">Live demo</a></li>
         <li><a href="/docs.html">Documentation</a></li>
         <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
       </ul>
@@ -137,20 +152,50 @@ docker compose up           # bring up Ollama + the binary
 
 const $ = (id) => document.getElementById(id);
 
-const goBtn       = $("go");
-const statusEl    = $("status");
-const backendEl   = $("backend");
-const resultsEl   = $("results");
-const preBox      = $("pre");
-const preBody     = $("pre_body");
-const thinkingBox = $("thinking_box");
-const thinkingBody= $("thinking_body");
-const thinkingMeta= $("thinking_meta");
-const finalBox    = $("final");
-const finalTier   = $("final_tier");
-const finalBody   = $("final_body");
-const evLogBox    = $("event_log");
-const evLogBody   = $("event_log_body");
+const goBtn        = $("go");
+const statusEl     = $("status");
+const backendEl    = $("backend");
+const resultsEl    = $("results");
+const preBox       = $("pre");
+const preBody      = $("pre_body");
+const thinkingBox  = $("thinking_box");
+const thinkingBody = $("thinking_body");
+const thinkingMeta = $("thinking_meta");
+const finalBox     = $("final");
+const finalTier    = $("final_tier");
+const finalBody    = $("final_body");
+const evLogBox     = $("event_log");
+const evLogBody    = $("event_log_body");
+const refinedBox   = $("refined");
+const refOrig      = $("ref_orig");
+const refNew       = $("ref_new");
+const refReason    = $("ref_reason");
+const refBlockedRow= $("ref_blocked_row");
+const refBlocked   = $("ref_blocked");
+const rOptional    = $("r_optional");
+
+// Mode selector. Default = both. SSE streaming is only available for the
+// analyze-only mode because /auth/stream takes a response and emits chunks
+// of the judge's chain-of-thought; refine / both go through the synchronous
+// /auth endpoint and render the verdict once it lands.
+let currentMode = "both";
+const modeButtons = document.querySelectorAll(".demo-modes button");
+for (const btn of modeButtons) {
+  btn.addEventListener("click", () => {
+    modeButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentMode = btn.dataset.mode;
+    rOptional.hidden = currentMode !== "refine";
+    updateGoLabel();
+  });
+}
+
+function updateGoLabel() {
+  if (currentMode === "analyze")     goBtn.textContent = "Analyze (streaming)";
+  else if (currentMode === "refine") goBtn.textContent = "Refine question";
+  else                               goBtn.textContent = "Analyze + refine";
+}
+updateGoLabel();
 
 // Persist the backend URL across reloads so the visitor doesn't re-type it.
 const stored = localStorage.getItem("dcs_backend");
@@ -206,6 +251,12 @@ function reset() {
   finalTier.textContent = "Final verdict";
   finalBody.innerHTML = "";
   finalBox.className = "verdict";
+  refinedBox.style.display = "none";
+  refOrig.textContent = "";
+  refNew.textContent = "";
+  refReason.textContent = "";
+  refBlockedRow.style.display = "none";
+  refBlocked.innerHTML = "";
   evLogBox.style.display = "none";
   evLogBody.innerHTML = "";
 }
@@ -220,13 +271,34 @@ goBtn.addEventListener("click", async () => {
 
   const question = $("q").value.trim();
   const response = $("r").value.trim();
-  if (!response) {
-    setStatus("Response field can't be empty.", "error");
+
+  // Per-mode validation mirrors main.go: refine needs only a question,
+  // analyze needs only a response, both needs both fields populated.
+  if (currentMode === "refine" && !question) {
+    setStatus("Question field can't be empty in refine mode.", "error");
+    return;
+  }
+  if (currentMode === "analyze" && !response) {
+    setStatus("Response field can't be empty in analyze mode.", "error");
+    return;
+  }
+  if (currentMode === "both" && (!question || !response)) {
+    setStatus("Both fields are required in analyze+refine mode.", "error");
     return;
   }
 
   reset();
   goBtn.disabled = true;
+
+  if (currentMode === "analyze") {
+    await runStreamingAnalyze(backend, question, response);
+  } else {
+    await runSyncRequest(backend, question, response, currentMode);
+  }
+});
+
+// Streaming path: POST /auth/stream with mode=analyze and parse SSE events.
+async function runStreamingAnalyze(backend, question, response) {
   setStatus("Connecting to " + backend + " …", "running");
 
   let res;
@@ -242,23 +314,12 @@ goBtn.addEventListener("click", async () => {
       body: JSON.stringify({ question, response, mode: "analyze" }),
     });
   } catch (e) {
-    setStatus("Connection failed: " + e.message, "error");
-    finalBox.style.display = "block";
-    finalBox.classList.add("low");
-    finalTier.textContent = "Connection error";
-    finalBody.innerHTML = "<p>Couldn't reach <code>" + backend + "</code>. Common causes:</p><ul><li>The backend isn't running on that URL.</li><li>The Colab tunnel expired (free ngrok = 8 h max).</li><li>CORS &mdash; the backend must allow this origin (the v8.7 default does).</li></ul>";
-    goBtn.disabled = false;
+    renderConnectionError(backend, e.message);
     return;
   }
 
   if (!res.ok) {
-    const txt = await res.text();
-    setStatus("HTTP " + res.status, "error");
-    finalBox.style.display = "block";
-    finalBox.classList.add("low");
-    finalTier.textContent = "HTTP " + res.status;
-    finalBody.innerHTML = "<pre><code>" + escapeHtml(txt) + "</code></pre>";
-    goBtn.disabled = false;
+    await renderHttpError(res);
     return;
   }
 
@@ -292,7 +353,80 @@ goBtn.addEventListener("click", async () => {
   } finally {
     goBtn.disabled = false;
   }
-});
+}
+
+// Synchronous path: POST /auth with mode=refine|both. /auth/stream only
+// emits analyze-side events, so refine/both go through the non-streaming
+// endpoint and we render the response once it lands. mode=both can take
+// ~150-220 s on 2x T4 because it still runs the full judge pipeline.
+async function runSyncRequest(backend, question, response, mode) {
+  const label = mode === "refine" ? "Refining question" : "Analyzing + refining";
+  setStatus(label + " via " + backend + " … (no streaming for this mode)", "running");
+
+  let res;
+  try {
+    res = await fetch(backend + "/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify({ question, response, mode }),
+    });
+  } catch (e) {
+    renderConnectionError(backend, e.message);
+    return;
+  }
+
+  if (!res.ok) {
+    await renderHttpError(res);
+    return;
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    setStatus("Bad response: " + e.message, "error");
+    goBtn.disabled = false;
+    return;
+  }
+
+  // mode=both returns analysis + refined_question; mode=refine returns only
+  // refined_question. Render whichever fields are present.
+  if (data.analysis) {
+    if (data.analysis.judge_thinking) {
+      thinkingBox.style.display = "block";
+      thinkingBody.textContent = data.analysis.judge_thinking;
+      thinkingMeta.textContent = "✓ thinking complete (" + data.analysis.judge_thinking.length + " chars).";
+    }
+    renderFinalVerdict(data.analysis);
+  }
+  if (data.refined_question) {
+    renderRefined(data.refined_question);
+  }
+  setStatus("Done in " + (data.latency_ms || "?") + " ms.", "done");
+  goBtn.disabled = false;
+}
+
+function renderConnectionError(backend, msg) {
+  setStatus("Connection failed: " + msg, "error");
+  finalBox.style.display = "block";
+  finalBox.classList.add("low");
+  finalTier.textContent = "Connection error";
+  finalBody.innerHTML = "<p>Couldn't reach <code>" + escapeHtml(backend) + "</code>. Common causes:</p><ul><li>The backend isn't running on that URL.</li><li>The Colab tunnel expired (free ngrok = 8 h max).</li><li>CORS &mdash; the backend must allow this origin (the v8.7 default does).</li></ul>";
+  goBtn.disabled = false;
+}
+
+async function renderHttpError(res) {
+  const txt = await res.text();
+  setStatus("HTTP " + res.status, "error");
+  finalBox.style.display = "block";
+  finalBox.classList.add("low");
+  finalTier.textContent = "HTTP " + res.status;
+  finalBody.innerHTML = "<pre><code>" + escapeHtml(txt) + "</code></pre>";
+  goBtn.disabled = false;
+}
 
 function handleEvent(name, data) {
   if (name === "pre_analysis") {
@@ -324,36 +458,7 @@ function handleEvent(name, data) {
     // The complete event will carry the parsed verdict; partial JSON is hidden
     // on purpose so the visitor doesn't see half-formed structure.
   } else if (name === "complete") {
-    const score = (typeof data.authenticity_score === "number") ? data.authenticity_score : 0;
-    let cls = "low";
-    if (score >= 65) cls = "high";
-    else if (score >= 40) cls = "mid";
-    finalBox.style.display = "block";
-    finalBox.className = "verdict " + cls;
-    finalTier.textContent = (data.depth_assessment || "verdict").toUpperCase() + " · final";
-    let html = '<div class="v-score">' + score + '<span style="font-size:1rem;color:var(--text-faint);font-weight:400">/100</span></div>';
-    html += '<table class="spec" style="margin:8px 0 0">';
-    if (data.depth_assessment) {
-      html += '<tr><td><code>depth</code></td><td><b>' + escapeHtml(data.depth_assessment) + '</b></td></tr>';
-    }
-    if (data.dominant_strategy) {
-      html += '<tr><td><code>dominant</code></td><td>' + escapeHtml(data.dominant_strategy) + '</td></tr>';
-    }
-    if (Array.isArray(data.pattern_breaks) && data.pattern_breaks.length) {
-      html += '<tr><td><code>pattern_breaks</code></td><td>' +
-        data.pattern_breaks.map(b => '<span class="tag">' + escapeHtml(b) + '</span>').join(" ") +
-        '</td></tr>';
-    }
-    if (Array.isArray(data.genuine_elements) && data.genuine_elements.length) {
-      html += '<tr><td><code>genuine</code></td><td>' +
-        data.genuine_elements.map(g => '<span class="tag green">' + escapeHtml(g) + '</span>').join(" ") +
-        '</td></tr>';
-    }
-    if (data.notes) {
-      html += '<tr><td><code>notes</code></td><td>' + escapeHtml(data.notes) + '</td></tr>';
-    }
-    html += '</table>';
-    finalBody.innerHTML = html;
+    renderFinalVerdict(data);
   } else if (name === "parse_error") {
     finalBox.style.display = "block";
     finalBox.className = "verdict mid";
@@ -366,6 +471,62 @@ function handleEvent(name, data) {
     finalBox.className = "verdict low";
     finalTier.textContent = (data.stage || "error");
     finalBody.innerHTML = '<p>' + escapeHtml(data.message || "Unknown error") + '</p>';
+  }
+}
+
+// renderFinalVerdict produces the score block from either the streaming
+// `complete` event or the analysis object returned by the synchronous
+// /auth endpoint. Both carry the same shape (authenticity_score,
+// depth_assessment, dominant_strategy, pattern_breaks, genuine_elements,
+// notes).
+function renderFinalVerdict(data) {
+  const score = (typeof data.authenticity_score === "number") ? data.authenticity_score : 0;
+  let cls = "low";
+  if (score >= 65) cls = "high";
+  else if (score >= 40) cls = "mid";
+  finalBox.style.display = "block";
+  finalBox.className = "verdict " + cls;
+  finalTier.textContent = (data.depth_assessment || "verdict").toUpperCase() + " · final";
+  let html = '<div class="v-score">' + score + '<span style="font-size:1rem;color:var(--text-faint);font-weight:400">/100</span></div>';
+  html += '<table class="spec" style="margin:8px 0 0">';
+  if (data.depth_assessment) {
+    html += '<tr><td><code>depth</code></td><td><b>' + escapeHtml(data.depth_assessment) + '</b></td></tr>';
+  }
+  if (data.dominant_strategy) {
+    html += '<tr><td><code>dominant</code></td><td>' + escapeHtml(data.dominant_strategy) + '</td></tr>';
+  }
+  if (Array.isArray(data.pattern_breaks) && data.pattern_breaks.length) {
+    html += '<tr><td><code>pattern_breaks</code></td><td>' +
+      data.pattern_breaks.map(b => '<span class="tag">' + escapeHtml(b) + '</span>').join(" ") +
+      '</td></tr>';
+  }
+  if (Array.isArray(data.genuine_elements) && data.genuine_elements.length) {
+    html += '<tr><td><code>genuine</code></td><td>' +
+      data.genuine_elements.map(g => '<span class="tag green">' + escapeHtml(g) + '</span>').join(" ") +
+      '</td></tr>';
+  }
+  if (data.notes) {
+    html += '<tr><td><code>notes</code></td><td>' + escapeHtml(data.notes) + '</td></tr>';
+  }
+  html += '</table>';
+  finalBody.innerHTML = html;
+}
+
+// renderRefined fills the refined-question card. Shape matches
+// types.go.RefinedQuestion: original_question, refined_question,
+// refinement_reasoning, patterns_blocked.
+function renderRefined(r) {
+  refinedBox.style.display = "block";
+  refOrig.textContent = r.original_question || "";
+  refNew.textContent = r.refined_question || "";
+  refReason.textContent = r.refinement_reasoning || "";
+  if (Array.isArray(r.patterns_blocked) && r.patterns_blocked.length) {
+    refBlockedRow.style.display = "";
+    refBlocked.innerHTML = r.patterns_blocked
+      .map(p => '<span class="tag accent">' + escapeHtml(p) + '</span>')
+      .join(" ");
+  } else {
+    refBlockedRow.style.display = "none";
   }
 }
 
