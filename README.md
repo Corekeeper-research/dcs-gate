@@ -84,8 +84,10 @@ HTTP endpoints:
 | `/health` | GET | Liveness + corpus info |
 | `/metrics` | GET | Cache stats |
 | `/auth` | POST | Synchronous analysis |
-| **`/auth/stream`** | POST | **v8.7 — SSE streaming** |
-| **`/stream-demo`** | GET | **v8.7 — embedded UI** |
+| **`/auth/stream`** | POST | **v8.7 — SSE streaming (mode=analyze/refine/both)** |
+| **`/analyze/stream`** | POST | **v8.7 — SSE solo análisis** |
+| **`/refine/stream`** | POST | **v8.7 — SSE solo refinado** |
+| **`/stream-demo`** | GET | **v8.7 — embedded UI (selector de endpoint/mode)** |
 | `/evaluate` | POST | Golden test runner |
 | `/calibrate` | POST | Threshold sweep |
 
@@ -124,6 +126,8 @@ thinking_chunk × N ← sanitized judge chain-of-thought chunks
 thinking_complete ← total thinking characters
 analysis_chunk × M ← sanitized JSON verdict chunks
 complete          ← final parsed AuthenticityAnalysis + full judge_thinking
+refine_loading    ← (mode=refine|both) carga fase de refinado
+refine_complete   ← (mode=refine|both) pregunta refinada final
 ```
 
 **Security:** Every chunk is sanitized before transmission. Patterns redacted:
