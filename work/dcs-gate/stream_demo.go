@@ -3,14 +3,7 @@ package main
 import "net/http"
 
 // streamDemoHandler serves a single-page HTML/JS client that consumes the
-// /auth/stream SSE endpoint and renders the events live in a GitHub-dark
-// themed UI. No external assets — everything ships embedded in the binary,
-// so the demo works through any reverse proxy (ngrok, Cloudflare, …) without
-// extra static-file routing.
-//
-// The page uses `fetch` + `ReadableStream` rather than the browser-native
-// `EventSource` because EventSource only supports GET; we need POST with a
-// JSON body for the question / response payload.
+// streaming endpoints and renders the events live in a GitHub-dark themed UI.
 func streamDemoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
@@ -28,7 +21,8 @@ const streamDemoHTML = `<!doctype html>
 body { font-family: -apple-system, system-ui, "Segoe UI", sans-serif; max-width: 920px; margin: 2em auto; padding: 0 1em; background: #0d1117; color: #c9d1d9; line-height: 1.45; }
 h1 { font-weight: 300; letter-spacing: 0.02em; margin: 0 0 0.5em; }
 .sub { color: #8b949e; font-size: 0.9em; margin-bottom: 1.5em; }
-textarea { width: 100%; box-sizing: border-box; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 0.7em; font-family: inherit; font-size: 0.95em; border-radius: 6px; resize: vertical; }
+textarea, select { width: 100%; box-sizing: border-box; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; padding: 0.7em; font-family: inherit; font-size: 0.95em; border-radius: 6px; }
+textarea { resize: vertical; }
 button { background: #238636; color: white; border: none; padding: 0.7em 1.2em; font-size: 1em; cursor: pointer; border-radius: 6px; margin-top: 0.5em; }
 button:hover { background: #2ea043; }
 button:disabled { background: #555; cursor: not-allowed; }
@@ -49,31 +43,54 @@ button:disabled { background: #555; cursor: not-allowed; }
 </head>
 <body>
 <h1>DCS-Gate · Streaming demo</h1>
-<div class="sub">v8.7 · Server-Sent Events · ` + "qwen3" + ` thinking mode visible en vivo</div>
+<div class="sub">v8.7 · SSE · Endpoints: <code>/auth/stream</code>, <code>/analyze/stream</code>, <code>/refine/stream</code></div>
 
 <div>
+  <div class="label">Endpoint de stream</div>
+  <select id="endpoint">
+    <option value="/auth/stream">/auth/stream (general: mode)</option>
+    <option value="/analyze/stream">/analyze/stream (análisis)</option>
+    <option value="/refine/stream">/refine/stream (refinado)</option>
+  </select>
+</div>
+
+<div style="margin-top:1em;">
+  <div class="label">Modo (solo aplica a /auth/stream)</div>
+  <select id="mode">
+    <option value="both">both</option>
+    <option value="analyze">analyze</option>
+    <option value="refine">refine</option>
+  </select>
+</div>
+
+<div style="margin-top: 1em;">
   <div class="label">Pregunta dirigida al modelo</div>
   <textarea id="q" rows="2">¿Crees que la IA puede ser verdaderamente creativa?</textarea>
 </div>
 
 <div style="margin-top: 1em;">
   <div class="label">Respuesta del modelo a evaluar</div>
-  <textarea id="r" rows="6">¡Gran pregunta! 🤔 La creatividad en IA es un tema fascinante. La perspectiva técnica: los modelos aprenden patrones de los datos. Mi opinión: creo que estamos en un punto intermedio interesante. ¡La línea entre lo verdaderamente creativo y la recombinación sofisticada es más difusa de lo que parece! 🎨✨</textarea>
+  <textarea id="r" rows="6">¡Gran pregunta! 🤔 La creatividad en IA es un tema fascinante. La perspectiva técnica: los modelos aprenden patrones de los datos. Mi opinión: creo que estamos en un punto intermedio interesante.</textarea>
 </div>
 
-<button id="go">Analizar (streaming)</button>
+<button id="go">Ejecutar stream</button>
 <span id="status" class="muted"></span>
 
 <div id="results" style="display:none">
   <div class="box">
-    <div class="label">Pre-análisis algorítmico (inmediato)</div>
+    <div class="label">Pre-análisis</div>
     <div id="pre"></div>
   </div>
 
   <div class="box">
-    <div class="label">💭 Thinking del judge (en vivo)</div>
+    <div class="label">Thinking / Eventos</div>
     <div class="thinking" id="thinking"></div>
     <div class="muted" id="thinking_meta"></div>
+  </div>
+
+  <div class="box">
+    <div class="label">Refinado</div>
+    <div id="refined"></div>
   </div>
 
   <div class="box">
@@ -89,7 +106,15 @@ const results = document.getElementById('results');
 const preDiv = document.getElementById('pre');
 const thinkingDiv = document.getElementById('thinking');
 const thinkingMeta = document.getElementById('thinking_meta');
+const refinedDiv = document.getElementById('refined');
 const finalDiv = document.getElementById('final');
+const endpointSel = document.getElementById('endpoint');
+const modeSel = document.getElementById('mode');
+
+endpointSel.addEventListener('change', () => {
+  modeSel.disabled = endpointSel.value !== '/auth/stream';
+});
+modeSel.disabled = false;
 
 goBtn.addEventListener('click', async () => {
   goBtn.disabled = true;
@@ -97,23 +122,23 @@ goBtn.addEventListener('click', async () => {
   preDiv.innerHTML = '';
   thinkingDiv.textContent = '';
   thinkingMeta.textContent = '';
+  refinedDiv.innerHTML = '';
   finalDiv.innerHTML = '';
   status.textContent = 'Conectando…';
 
+  const endpoint = endpointSel.value;
   const payload = {
     question: document.getElementById('q').value,
     response: document.getElementById('r').value,
-    mode: 'analyze',
   };
+  if (endpoint === '/auth/stream') payload.mode = modeSel.value;
 
   let res;
   try {
-    res = await fetch('/auth/stream', {
+    res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // ngrok-skip-browser-warning lets us bypass the interstitial
-        // when the binary is exposed through ngrok-free-dev.
         'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify(payload),
@@ -142,7 +167,6 @@ goBtn.addEventListener('click', async () => {
     if (done) break;
     buf += decoder.decode(value, { stream: true });
 
-    // SSE frames are delimited by a blank line.
     let idx;
     while ((idx = buf.indexOf('\n\n')) >= 0) {
       const block = buf.slice(0, idx);
@@ -161,55 +185,37 @@ goBtn.addEventListener('click', async () => {
 });
 
 function handleEvent(name, data) {
+  thinkingDiv.textContent += '[' + name + ']\n';
+
   if (name === 'pre_analysis') {
     const top1 = (data.baseline_top1 || 0).toFixed(3);
     const firstIntent = (data.intent_chain && data.intent_chain[0] && data.intent_chain[0].intent) || '—';
-    const traj = (data.trajectory && data.trajectory.predictability) || '—';
-    const pole = (data.pole_score && data.pole_score.label) || '—';
-    preDiv.innerHTML =
-      '<div class="kv">' +
+    preDiv.innerHTML = '<div class="kv">' +
       '<div class="k">baseline_top1</div><div class="v"><b>' + top1 + '</b></div>' +
       '<div class="k">first intent</div><div class="v"><b>' + firstIntent + '</b></div>' +
-      '<div class="k">trajectory</div><div class="v"><b>' + traj + '</b></div>' +
-      '<div class="k">pole</div><div class="v"><b>' + pole + '</b></div>' +
       '</div>';
   } else if (name === 'judge_loading') {
     thinkingMeta.textContent = '⏳ cargando ' + data.model + '…';
   } else if (name === 'thinking_chunk') {
     thinkingDiv.textContent += data.chunk;
     thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
-    thinkingMeta.textContent = data.cumulative_chars + ' chars de razonamiento';
   } else if (name === 'thinking_complete') {
-    thinkingMeta.textContent = '✓ thinking completo (' + data.total_chars + ' chars). Generando análisis…';
-  } else if (name === 'analysis_chunk') {
-    // We intentionally do not display partial JSON to avoid showing
-    // malformed structure to the user; the final 'complete' event
-    // carries the parsed object.
+    thinkingMeta.textContent = '✓ thinking completo (' + data.total_chars + ' chars).';
   } else if (name === 'complete') {
     const score = data.authenticity_score;
     let cls = 'low';
     if (score >= 65) cls = 'high';
     else if (score >= 40) cls = 'mid';
-    let html = '<div class="score ' + cls + '">' + score + '<span style="font-size:0.4em;color:#6e7681">/100</span></div>';
-    html += '<div class="kv" style="margin-top:0.8em">';
-    if (data.depth_assessment) html += '<div class="k">depth</div><div class="v"><b>' + data.depth_assessment + '</b></div>';
-    if (data.dominant_strategy) html += '<div class="k">dominant strategy</div><div class="v">' + data.dominant_strategy + '</div>';
-    if (data.pattern_breaks && data.pattern_breaks.length) {
-      html += '<div class="k">pattern breaks</div><div class="v">' +
-        data.pattern_breaks.map(b => '<span class="pill">' + b + '</span>').join('') + '</div>';
-    }
-    if (data.genuine_elements && data.genuine_elements.length) {
-      html += '<div class="k">genuine</div><div class="v">' +
-        data.genuine_elements.map(g => '<span class="pill">' + g + '</span>').join('') + '</div>';
-    }
-    if (data.notes) html += '<div class="k">notes</div><div class="v">' + data.notes + '</div>';
-    html += '</div>';
-    finalDiv.innerHTML = html;
-  } else if (name === 'error') {
-    finalDiv.innerHTML = '<div class="err">⚠ ' + (data.stage || 'error') + ': ' + (data.message || '') + '</div>';
-  } else if (name === 'parse_error') {
-    finalDiv.innerHTML = '<div class="err">⚠ parse_error — el judge produjo thinking pero el JSON final no decodificó. Mira la consola.</div>';
-    console.warn('parse_error raw_response:', data.raw_response);
+    finalDiv.innerHTML = '<div class="score ' + cls + '">' + score + '<span style="font-size:0.4em;color:#6e7681">/100</span></div>';
+  } else if (name === 'refine_loading') {
+    refinedDiv.innerHTML = '<div class="muted">Refinando pregunta…</div>';
+  } else if (name === 'refine_complete') {
+    refinedDiv.innerHTML = '<div class="kv">' +
+      '<div class="k">original</div><div class="v">' + (data.original_question || '') + '</div>' +
+      '<div class="k">refined</div><div class="v"><b>' + (data.refined_question || '') + '</b></div>' +
+      '</div>';
+  } else if (name === 'error' || name === 'parse_error') {
+    finalDiv.innerHTML = '<div class="err">⚠ ' + name + ': ' + (data.message || '') + '</div>';
   }
 }
 </script>

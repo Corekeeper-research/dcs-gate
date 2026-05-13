@@ -19,8 +19,10 @@ nuevo es opt-in:
 
 | Endpoint | Método | Para qué sirve |
 |---|---|---|
-| `POST /auth/stream` | SSE | mismo análisis que `/auth`, pero emite el chain-of-thought del juez en tiempo real a medida que llega de Ollama |
-| `GET /stream-demo` | HTML | UI embebida con dos textareas y un visor SSE en tema GitHub-dark |
+| `POST /auth/stream` | SSE | endpoint general con `mode=analyze/refine/both` |
+| `POST /analyze/stream` | SSE | endpoint explícito para análisis (equivale a `mode=analyze`) |
+| `POST /refine/stream` | SSE | endpoint explícito para refinado (equivale a `mode=refine`) |
+| `GET /stream-demo` | HTML | UI embebida con selector de endpoint y modo |
 
 ### Por qué importa
 `qwen3:14b` en modo thinking tarda **~150-210 s** por análisis en una T4
