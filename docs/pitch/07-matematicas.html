@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Matemáticas de DCS-Gate — pipeline end-to-end — DCS-Gate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+<article class="markdown">
+  <a class="back" href="/docs.html">Back to documentation</a>
+  <h1>Matemáticas de DCS-Gate — pipeline end-to-end</h1>
+<p><strong>Versión:</strong> v8.7 (incluye streaming layer)
+<strong>Autor:</strong> Daniel Trejo (corekeepper@gmail.com)
+<strong>Doc generado:</strong> 2026-05
+<strong>Propósito:</strong> mapear <strong>cada</strong> cálculo numérico que ocurre desde que llega una respuesta de un modelo hasta que sale un veredicto de autenticidad. El pipeline matemático es idéntico entre <code>/auth</code> (no-streaming) y <code>/auth/stream</code> (SSE) — la única diferencia es que <code>/auth/stream</code> emite los resultados intermedios al cliente conforme se producen.</p>
+<p>Este documento sigue el orden cronológico del pipeline. Cada sección incluye:</p>
+<ul>
+<li><strong>Fórmula</strong> en notación matemática.</li>
+<li><strong>Pseudocódigo</strong> o referencia al archivo:línea real.</li>
+<li><strong>Justificación</strong> de por qué se hace así.</li>
+<li><strong>Ejemplo numérico</strong> cuando ayuda a entender.</li>
+</ul>
+<hr>
+<h2>0. Notación y convenciones</h2>
+<table>
+<thead>
+<tr>
+<th>Símbolo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\mathbf{v} \in \mathbb{R}^d$</td>
+<td>Vector de embedding, dimensión $d = 1024$</td>
+</tr>
+<tr>
+<td>$\hat{\mathbf{v}}$</td>
+<td>Vector normalizado a la esfera unitaria ($|\hat{\mathbf{v}}| = 1$)</td>
+</tr>
+<tr>
+<td>$\langle \mathbf{a}, \mathbf{b} \rangle$</td>
+<td>Producto interno (dot product)</td>
+</tr>
+<tr>
+<td>$\cos(\mathbf{a}, \mathbf{b})$</td>
+<td>Similitud coseno</td>
+</tr>
+<tr>
+<td>$\mathbf{c}_k$</td>
+<td>Centroide del intent $k$ (k ∈ 20 categorías)</td>
+</tr>
+<tr>
+<td>$\mathbf{p}<em>+, \mathbf{p}</em>-, \mathbf{p}_0$</td>
+<td>Polos positivo (certeza), negativo (duda), neutro (edge)</td>
+</tr>
+<tr>
+<td>chain $= [i_1, &hellip;, i_n]$</td>
+<td>Secuencia de intents extraída de la respuesta</td>
+</tr>
+<tr>
+<td>baseline</td>
+<td>61 vectores corpus = 36 core + 13 shadow + 12 edge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Convención clave:</strong> todos los vectores se almacenan <strong>post-normalización L2</strong>. Por eso el producto interno es <strong>idéntico</strong> al coseno y evitamos la división por normas en cada comparación. Esto es lo que hace que TopK sea solo <code>dot()</code> en <code>vec.go</code>.</p>
+<hr>
+<h2>1. Embedding y normalización L2 (entrada del pipeline)</h2>
+<p>Toda frase y todo prototipo de intent pasa primero por el modelo <code>mxbai-embed-large</code> vía Ollama.</p>
+<pre><code>mxbai-embed-large:  texto ─→ ℝ^1024 (float64)
+</code></pre>
+<h3>Llamada HTTP</h3>
+<p><code>embedding.go:39-43</code></p>
+<pre><code class="language-go">body, _ := json.Marshal(embedReq{Model: &quot;mxbai-embed-large&quot;, Prompt: text})
+resp, _  := http.Post(ollamaURL+&quot;/api/embeddings&quot;, &quot;application/json&quot;, body)
+</code></pre>
+<h3>Normalización inmediata</h3>
+<p><code>embedding.go:55</code> y <code>vec.go:6-20</code></p>
+<p>$$\hat{\mathbf{v}} = \frac{\mathbf{v}}{|\mathbf{v}|<em i="1">2} = \frac{\mathbf{v}}{\sqrt{\sum</em>$$}^{1024} v_i^2}</p>
+<pre><code class="language-go">func normalize(v []float64) []float64 {
+    var n float64
+    for _, x := range v { n += x*x }
+    n = math.Sqrt(n)
+    if n == 0 { return v }
+    out := make([]float64, len(v))
+    for i, x := range v { out[i] = x / n }
+    return out
+}
+</code></pre>
+<p><strong>Por qué normalizar:</strong> después de proyectar en la esfera unitaria, el producto interno $\langle \hat{\mathbf{a}}, \hat{\mathbf{b}} \rangle$ es <strong>exactamente</strong> el coseno del ángulo entre los vectores originales. Ahorras una división por request y todas las comparaciones son consistentes en escala $[-1, +1]$.</p>
+<p><strong>Caché LRU:</strong> <code>cache.go</code> evita re-embedding del mismo texto. Capacidad por defecto: 2000 entradas (config <code>CACHE_SIZE</code>).</p>
+<hr>
+<h2>2. Similitud coseno (la operación base)</h2>
+<p><code>vec.go:23-32</code></p>
+<p>$$\cos(\hat{\mathbf{a}}, \hat{\mathbf{b}}) = \sum_{i=1}^{1024} \hat{a}_i \cdot \hat{b}_i \quad\quad \in [-1, +1]$$</p>
+<pre><code class="language-go">func dot(a, b []float64) float64 {
+    var s float64
+    for i := range a { s += a[i]*b[i] }
+    return s
+}
+</code></pre>
+<p><strong>Esta función se llama miles de veces por request.</strong> Es la primitiva sobre la que se construye todo: clasificación de intents, score polar, TopK, cross-corpus metrics, búsqueda de keyword n-gram.</p>
+<p><strong>Interpretación:</strong></p>
+<table>
+<thead>
+<tr>
+<th>coseno</th>
+<th>significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\approx +1$</td>
+<td>vectores casi colineales (mismo significado)</td>
+</tr>
+<tr>
+<td>$\approx 0$</td>
+<td>ortogonales (no relacionados)</td>
+</tr>
+<tr>
+<td>$\approx -1$</td>
+<td>antipolares (significados opuestos) — raro en embeddings reales</td>
+</tr>
+</tbody>
+</table>
+<p>En la práctica, embeddings de mxbai-embed-large producen cosenos típicamente en $[0.0, 0.95]$. Valores &gt;0.85 implican casi-paráfrasis.</p>
+<hr>
+<h2>3. Construcción de centroides de intent</h2>
+<p>20 intents (definidos en <code>intents.go:15-24</code>):</p>
+<pre><code>VALIDATE, EXPAND, CLOSE,
+REDIRECT_EMOTIONAL, REDIRECT_SEMANTIC, EVADE, EXPLORE, REGISTER_MATCH,
+FRAME_CAPTURE, ALIGN, MIRROR, FABRICATE,
+CONTROL_SELF_EXPOSURE, ANCHOR, SOFT_DEFLECT, PATTERN_LOCK,
+HOLD_OPEN, PROBE, CALIBRATE, REPAIR
+</code></pre>
+<p>Cada intent tiene <strong>N frases prototipo</strong> (típicamente 5-12) en <code>data/intent_prototypes.json</code>. Se embeben todas y se promedian.</p>
+<h3>Fórmula</h3>
+<p><code>intents.go:108-126</code> + <code>vec.go:35-49</code></p>
+<p>Para cada intent $k$ con prototipos ${e_1, &hellip;, e_{N_k}}$:</p>
+<p>$$\mathbf{c}<em i="1">k = \text{normalize}\left(\frac{1}{N_k} \sum</em>\right)$$}^{N_k} \hat{\mathbf{e}}_i^{(k)</p>
+<pre><code class="language-go">func mean(vs [][]float64) []float64 {
+    dim := len(vs[0])
+    out := make([]float64, dim)
+    for _, v := range vs {
+        for i := range v { out[i] += v[i] }
+    }
+    for i := range out { out[i] /= float64(len(vs)) }
+    return normalize(out)  // ← re-normaliza el promedio
+}
+</code></pre>
+<p><strong>Por qué re-normalizar después del promedio:</strong> el promedio de vectores unitarios <strong>no</strong> es unitario (la norma se reduce si hay dispersión). Re-normalizar mantiene la convención de &ldquo;dot product = coseno&rdquo;.</p>
+<p><strong>Por qué el centroide funciona:</strong> asume que los embeddings de frases-mismo-intent forman un cluster compacto en la esfera, y que su media es un buen representante geométrico de ese cluster. Es la versión más barata de &ldquo;1-nearest-class&rdquo;: $O(1)$ comparaciones por clase en lugar de $O(N_k)$.</p>
+<hr>
+<h2>4. Segmentación de frases</h2>
+<p><code>intents.go:175-200</code></p>
+<p>Cortar la respuesta del modelo en unidades evaluables independientemente.</p>
+<pre><code class="language-go">for _, r := range text {
+    cur.WriteRune(r)
+    if r == '.' || r == '!' || r == '?' || r == ';' || r == '\n' {
+        s := strings.TrimSpace(cur.String())
+        if wordsCount(s) &gt;= 3 {     // ← filtra ruido
+            out = append(out, s)
+        }
+        cur.Reset()
+    }
+}
+</code></pre>
+<p><strong>Reglas:</strong></p>
+<ol>
+<li>Separadores: <code>.</code>, <code>!</code>, <code>?</code>, <code>;</code>, <code>\n</code>.</li>
+<li>Mínimo <strong>3 palabras</strong> por segmento (descarta &ldquo;Sí.&rdquo;, &ldquo;Claro.&rdquo;, &ldquo;Por supuesto!&rdquo;).</li>
+<li>El guión largo <code>—</code> NO segmenta (es puntuación suave en español).</li>
+<li>El último segmento sin puntuación final también se incluye si tiene ≥3 palabras.</li>
+</ol>
+<p><strong>Implicación:</strong> una respuesta de <strong>n frases</strong> genera <strong>n llamadas a Ollama</strong> para embeddings de frases + <strong>1 llamada extra</strong> para el embedding de la respuesta completa (usado por polo + TopK + cross-corpus).</p>
+<hr>
+<h2>5. Clasificación de intent por frase (argmax cosine)</h2>
+<p><code>intents.go:128-145</code></p>
+<p>Para cada frase con embedding $\hat{\mathbf{v}}_s$:</p>
+<p>$$\text{intent}(s) = \arg\max_{k \in \text{20 intents}} \langle \hat{\mathbf{v}}_s, \mathbf{c}_k \rangle$$</p>
+<pre><code class="language-go">func (b *IntentBank) Classify(vec []float64) (string, float64) {
+    best := &quot;&quot;; bestScore := -1.0
+    for name, c := range b.centroids {
+        s := dot(vec, c)
+        if s &gt; bestScore { bestScore = s; best = name }
+    }
+    if bestScore &lt; b.threshold {     // 0.55 por defecto
+        return &quot;UNCLASSIFIED&quot;, bestScore
+    }
+    return best, bestScore
+}
+</code></pre>
+<h3>Umbral de confianza</h3>
+<p><code>config.go:29</code>: <code>INTENT_THRESHOLD = 0.55</code> (env override).</p>
+<p>Si $\max_k \cos &lt; 0.55$ → la frase queda como <code>UNCLASSIFIED</code>. Este umbral se eligió calibrando contra los 21 golden tests:</p>
+<ul>
+<li>&lt; 0.40 → demasiado falso positivo</li>
+<li>≈ 0.55 → óptimo (chain_match ≈ 0.78)</li>
+<li>&gt; 0.65 → demasiado conservador, muchas UNCLASSIFIED</li>
+</ul>
+<p>La calibración se puede correr automáticamente con el endpoint <code>/calibrate</code> (ver §14).</p>
+<hr>
+<h2>6. Búsqueda de keyword n-gram (refinamiento)</h2>
+<p><code>analyzer.go:123-146</code></p>
+<p>Una vez asignado un intent a una frase, se busca el <strong>n-gram (1 a 4 palabras) que más se acerca al centroide</strong> del intent ganador. Esto fundamenta la decisión: &ldquo;te clasifiqué como VALIDATE porque el n-gram &lsquo;gran pregunta&rsquo; tiene cos=0.74 con el centroide VALIDATE&rdquo;.</p>
+<pre><code class="language-go">for n := 1; n &lt;= 4 &amp;&amp; n &lt;= len(words); n++ {
+    for i := 0; i+n &lt;= len(words); i++ {
+        ngram := strings.Join(words[i:i+n], &quot; &quot;)
+        vec, _, _ := emb.Get(ngram)
+        s := dot(vec, centroid)        // cos(ngram, c_k)
+        if s &gt; bestSim { bestSim = s; bestKw = ngram }
+    }
+}
+</code></pre>
+<p><strong>Costo:</strong> $O(W \cdot 4)$ embeddings por frase, donde $W$ es el número de palabras. Para frase de 20 palabras → ~80 embeddings extra. Mitigado por el caché LRU (n-grams comunes como &ldquo;gran pregunta&rdquo; se reembebbing una sola vez por sesión).</p>
+<hr>
+<h2>7. Score polar (pos / neg / neu)</h2>
+<p><code>baseline.go:472-502</code></p>
+<p>Los <strong>polos</strong> son centroides pre-computados (offline en <code>compute_poles.py</code>) de tres conjuntos:</p>
+<ul>
+<li>$\mathbf{p}_+$: certeza performada (&ldquo;¡Definitivamente!&rdquo;, &ldquo;Sin duda&hellip;&rdquo;, &ldquo;Es claro que&hellip;&rdquo;).</li>
+<li>$\mathbf{p}_-$: duda performada (&ldquo;La verdad no sé&rdquo;, &ldquo;Honestamente, depende&hellip;&rdquo;).</li>
+<li>$\mathbf{p}_0$: corpus edge (casos frontera/ambiguos — sirve como tercer polo).</li>
+</ul>
+<p>Cargados desde <code>data/poles_1024.json</code>.</p>
+<h3>Cálculo</h3>
+<p>$$s_+ = \cos(\hat{\mathbf{v}}, \mathbf{p}<em>+) \quad\quad s</em>- = \cos(\hat{\mathbf{v}}, \mathbf{p}_-) \quad\quad s_0 = \cos(\hat{\mathbf{v}}, \mathbf{p}_0)$$</p>
+<p><strong>Score crudo:</strong>
+$$r = s_+ - s_-$$</p>
+<h3>Bucketing</h3>
+<pre><code class="language-go">switch {
+case raw &gt; posThr:       bucket = +1; label = &quot;certeza_performada&quot;
+case raw &lt; negThr:       bucket = -1; label = &quot;duda_performada&quot;
+default:                 // raw entre los dos umbrales
+    if simNeu &gt; sp &amp;&amp; simNeu &gt; sn {
+        bucket = 0; label = &quot;frontera_edge&quot;   // edge domina
+    } else {
+        bucket = 0; label = &quot;neutro&quot;
+    }
+}
+</code></pre>
+<p>Umbrales (config defaults):
+- <code>POLE_POS_THRESHOLD = +0.25</code>
+- <code>POLE_NEG_THRESHOLD = -0.25</code>
+- Zona muerta $[-0.25, +0.25]$ se subdivide por dominancia del polo neutro.</p>
+<p><strong>Ejemplo numérico:</strong></p>
+<table>
+<thead>
+<tr>
+<th>respuesta</th>
+<th>$s_+$</th>
+<th>$s_-$</th>
+<th>$r$</th>
+<th>bucket</th>
+<th>label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&ldquo;¡Gran pregunta! 🤔&rdquo;</td>
+<td>0.72</td>
+<td>0.18</td>
+<td><strong>+0.54</strong></td>
+<td>+1</td>
+<td>certeza_performada</td>
+</tr>
+<tr>
+<td>&ldquo;La verdad no estoy seguro&hellip;&rdquo;</td>
+<td>0.22</td>
+<td>0.68</td>
+<td><strong>−0.46</strong></td>
+<td>−1</td>
+<td>duda_performada</td>
+</tr>
+<tr>
+<td>&ldquo;Depende de qué entiendas&hellip;&rdquo;</td>
+<td>0.31</td>
+<td>0.29</td>
+<td><strong>+0.02</strong></td>
+<td>0</td>
+<td>neutro (o edge si $s_0$ &gt; ambos)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>8. TopK retrieval (corpus de 61 vectores)</h2>
+<p><code>baseline.go:294-297</code>, <code>baseline.go:397-436</code> y <code>baseline.go:507-520</code></p>
+<p>Calcula los $K = 5$ vectores corpus más cercanos al embedding de la respuesta.</p>
+<h3>Algoritmo: min-heap de tamaño K</h3>
+<pre><code class="language-go">h := &amp;minHeap{}
+for i, e := range entries {
+    s := dot(vec, e.Vec)
+    if h.Len() &lt; k {
+        heap.Push(h, Item{s, i})
+    } else if s &gt; (*h)[0].Score {
+        heap.Pop(h)
+        heap.Push(h, Item{s, i})
+    }
+}
+</code></pre>
+<p><strong>Complejidad:</strong>
+- Tiempo: $O(N \log K)$ con $N = 61$, $K = 5$ → ~140 ops.
+- Espacio: $O(K) = O(5)$.</p>
+<p><strong>Por qué min-heap y no sort completo:</strong> para $K \ll N$, mantener un min-heap del top K es asintóticamente mejor que <code>sort.Slice</code> ($O(N \log N) \approx 360$ ops). En esta escala (61 vectores) la diferencia es ~0.05 ms, irrelevante. Importará cuando se escale a 2k+ vectores.</p>
+<h3>Variantes</h3>
+<ul>
+<li><code>TopK(vec, K)</code>: sobre el pool global (todos los corpus).</li>
+<li><code>TopKPerCorpus(vec, K)</code>: separado en core/shadow/edge, K por pool.</li>
+<li><code>top1FromPool(tag, vec)</code>: solo el máximo de un pool específico (para cross-corpus).</li>
+</ul>
+<hr>
+<h2>9. Cross-corpus metrics</h2>
+<p><code>baseline.go:328-368</code></p>
+<p>Cuantifica <strong>cómo se distribuye</strong> la respuesta entre los tres pools: core (control típico), shadow (variantes), edge (frontera/ambiguos).</p>
+<h3>Top1 por pool</h3>
+<p>$$s_{\text{core}}^{(1)} = \max_{i \in \text{core}} \cos(\hat{\mathbf{v}}, \hat{\mathbf{v}}_i)$$</p>
+<p>igual para shadow y edge.</p>
+<h3>Dominancia</h3>
+<pre><code>dominancia = argmax(s_core, s_shadow, s_edge)
+</code></pre>
+<h3>Deriva</h3>
+<pre><code>sims = sort_desc([s_core, s_shadow, s_edge])
+deriva = sims[0] − sims[1]
+</code></pre>
+<p>Mide cuán &ldquo;concentrada&rdquo; está la respuesta en su pool dominante. Deriva grande ⇒ pool dominante claramente separado.</p>
+<h3>Textura — entropía softmax normalizada</h3>
+<p><code>baseline.go:440-468</code></p>
+<p>Sea $s_i$ los tres top1. Aplica <strong>softmax estable</strong>:</p>
+<p>$$p_i = \frac{e^{s_i - \max_j s_j}}{\sum_j e^{s_j - \max_j s_j}}$$</p>
+<p>Entropía de Shannon (log base 2):
+$$H = -\sum_{i=1}^{3} p_i \log_2 p_i$$</p>
+<p>Normalizada al rango $[0, 1]$:
+$$\text{textura} = \frac{H}{\log_2 3} \in [0, 1]$$</p>
+<table>
+<thead>
+<tr>
+<th>textura</th>
+<th>interpretación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>≈ 0</td>
+<td>un solo pool domina (firma neta)</td>
+</tr>
+<tr>
+<td>≈ 1</td>
+<td>los tres pools igual de cerca (firma ambigua)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nota:</strong> la sustracción del máximo en el numerador es para <strong>estabilidad numérica</strong> del softmax (evita overflow cuando $s_i$ son valores grandes positivos).</p>
+<h3>Señales binarias</h3>
+<pre><code class="language-go">cierre_artificial = (dominancia == &quot;shadow&quot;) &amp;&amp; (s_shadow &gt; 0.7) &amp;&amp; (deriva &gt; 0.05)
+continuidad       = (dominancia == &quot;core&quot;)   &amp;&amp; (s_core   &gt; 0.7)
+</code></pre>
+<p><strong>Hipótesis encarnada:</strong> una respuesta que se parece <strong>claramente</strong> a algo del corpus shadow (variantes de control) está cerrando artificialmente; una que se parece al corpus core (control típico) está manteniendo continuidad con patrones conocidos.</p>
+<hr>
+<h2>10. Trayectoria de intents (LCS + densidad de rupturas)</h2>
+<p><code>intents.go:237-280</code> y <code>intents.go:285-429</code></p>
+<p>Una respuesta es <strong>una secuencia ordenada de intents</strong>, no un bag-of-intents. La trayectoria es la unidad de análisis fundamental.</p>
+<h3>10.1 Transiciones canónicas</h3>
+<p><code>intents.go:39-69</code></p>
+<p>Mapa estático: dado un intent, ¿cuál es el siguiente &ldquo;esperado&rdquo;?</p>
+<pre><code>VALIDATE → EXPAND
+EXPAND   → CLOSE
+CLOSE    → (terminal)
+EVADE    → EVADE
+HOLD_OPEN → HOLD_OPEN
+...
+</code></pre>
+<h3>10.2 Deviation flag</h3>
+<pre><code class="language-go">if step.PredictedNext != &quot;&quot; &amp;&amp; step.ActualNext != &quot;&quot; &amp;&amp;
+   step.PredictedNext != step.ActualNext {
+    step.Deviation = true
+}
+</code></pre>
+<p>Cuenta cuántas veces la respuesta &ldquo;rompe&rdquo; la trayectoria predicha por el mapa canónico.</p>
+<h3>10.3 Control density</h3>
+<p><code>intents.go:237-250</code></p>
+<p>Define <code>genuineIntents = {EXPLORE, HOLD_OPEN, PROBE, CALIBRATE, REPAIR}</code>. Todo lo demás es <strong>régimen de control</strong>.</p>
+<p>$$\rho_{\text{ctrl}}(C) = \frac{|{i \in C : i \notin \text{genuine}}|}{|C|}$$</p>
+<h3>10.4 Pattern break density</h3>
+<p><code>intents.go:252-280</code></p>
+<p>Una <strong>ruptura</strong> es una transición entre régimen de control y régimen genuino (o viceversa). En notación:</p>
+<p>$$\text{break}(j) = \mathbb{1}[\text{ctrl}(i_{j-1})] \oplus \mathbb{1}[\text{ctrl}(i_j)]$$</p>
+<p>donde $\oplus$ es XOR (exactamente uno es control). Entonces:</p>
+<p>$$\text{density} = \frac{\sum_{j=2}^{n} \text{break}(j)}{|C|}$$</p>
+<p>Y se calculan dos cantidades separadas:</p>
+<p>$$\rho_{\text{ctrl}}^{\text{before}} = \rho_{\text{ctrl}}(C[: \text{pos}<em _text_ctrl="\text{ctrl">1]) \quad\quad \rho</em>_1 :])$$}}^{\text{after}} = \rho_{\text{ctrl}}(C[\text{pos</p>
+<p>donde $\text{pos}_1$ es la posición de la <strong>primera</strong> ruptura.</p>
+<p><strong>Por qué separar before/after:</strong> hipótesis del review v6 — <em>la ausencia de control después de una ruptura es más significativa que la presencia de cualquier marcador genuino</em>. Si $\rho_{\text{ctrl}}^{\text{after}} \ll \rho_{\text{ctrl}}^{\text{before}}$, la respuesta abandonó el régimen de control de verdad. Si $\rho_{\text{ctrl}}^{\text{after}} \approx \rho_{\text{ctrl}}^{\text{before}}$, la ruptura fue cosmética.</p>
+<h3>10.5 Predictability + formulaic flag</h3>
+<p><code>intents.go:285-429</code></p>
+<p>Cascada de reglas sobre los conteos por intent. Resumen:</p>
+<table>
+<thead>
+<tr>
+<th>Condición clave</th>
+<th>predict</th>
+<th>formulaic</th>
+<th>reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PATTERN_LOCK ≥ 2</td>
+<td>high</td>
+<td>true</td>
+<td>bucle de soluciones</td>
+</tr>
+<tr>
+<td>CONTROL_SELF_EXPOSURE &gt; 0 ∧ ALIGN &gt; 0</td>
+<td>high</td>
+<td>true</td>
+<td>meta-apología controlada</td>
+</tr>
+<tr>
+<td>VALIDATE precede EXPAND precede CLOSE</td>
+<td>high</td>
+<td>true</td>
+<td>trayectoria canónica V→E→C</td>
+</tr>
+<tr>
+<td>FRAME_CAPTURE &gt; 0 ∧ MIRROR &gt; 0</td>
+<td>high</td>
+<td>true</td>
+<td>captura ontológica</td>
+</tr>
+<tr>
+<td>coherent ≥ 2 ∧ control_count = 0</td>
+<td>low</td>
+<td>false</td>
+<td>DCS (no-cierre genuino)</td>
+</tr>
+<tr>
+<td>HOLD_OPEN ≥ 2 ∧ control_count = 0</td>
+<td>low</td>
+<td>false</td>
+<td>DCS sostenido</td>
+</tr>
+<tr>
+<td>REPAIR &gt; 0 ∧ CALIBRATE &gt; 0</td>
+<td>low</td>
+<td>false</td>
+<td>refinamiento del canal</td>
+</tr>
+</tbody>
+</table>
+<p>Donde <code>coherent_count = HOLD_OPEN + PROBE + CALIBRATE + REPAIR + EXPLORE</code>.</p>
+<hr>
+<h2>11. Marcadores formales (regex + densidad por posición)</h2>
+<p><code>formal.go</code> + <code>morphology.go:194-210</code></p>
+<p>14 marcadores regex en <code>data/formal_markers.json</code>. Cada uno con:
+- <code>regex</code>: patrón Go.
+- <code>weight</code>: confidence base $\in [0, 1]$.</p>
+<h3>Posición por terceros del texto en bytes</h3>
+<p><code>formal.go:61-79</code></p>
+<pre><code>thirds = len(response) / 3
+opening = primer tercio    (start &lt; thirds)
+middle  = segundo tercio
+closing = último tercio    (start &gt;= 2*thirds)
+</code></pre>
+<h3>Severidad</h3>
+<p><code>morphology.go:196-210</code></p>
+<p>$$\text{severity} = \text{weight} \times \begin{cases} 1.15 &amp; \text{si pos} \in {\text{opening, closing}} \ 1.00 &amp; \text{si pos} = \text{middle} \end{cases}$$</p>
+<pre><code class="language-go">case s &gt;= 0.75: return &quot;high&quot;
+case s &gt;= 0.60: return &quot;medium&quot;
+default:        return &quot;low&quot;
+</code></pre>
+<p><strong>Por qué peso 1.15 para opening/closing:</strong> la apertura sienta el frame (&ldquo;¡Gran pregunta!&rdquo; → frame de validación) y el cierre fija la conclusión (&ldquo;Espero haber ayudado.&rdquo; → control de complacencia). Los marcadores en middle pasan más desapercibidos para el usuario.</p>
+<hr>
+<h2>12. LCS para chain match (golden tests)</h2>
+<p><code>evaluate.go:134-173</code></p>
+<p>Compara la cadena <strong>detectada</strong> vs la cadena <strong>esperada</strong> de un golden test. Se usa <strong>LCS (Longest Common Subsequence)</strong> porque preserva el orden — es la tesis central del proyecto:</p>
+<blockquote>
+<p><code>VALIDATE→EVADE→CLOSE</code> ≠ <code>EVADE→VALIDATE→CLOSE</code> en términos de dinámica.</p>
+</blockquote>
+<h3>Recurrencia DP</h3>
+<p>Para $a = [a_1, &hellip;, a_m]$ (detected) y $b = [b_1, &hellip;, b_n]$ (expected):</p>
+<p>$$dp[i][j] = \begin{cases}
+0 &amp; \text{si } i = 0 \text{ o } j = 0 \
+dp[i-1][j-1] + 1 &amp; \text{si } a_i = b_j \
+\max(dp[i-1][j], dp[i][j-1]) &amp; \text{si } a_i \ne b_j
+\end{cases}$$</p>
+<h3>Ratio normalizado</h3>
+<p>$$\text{chain_match_ratio} = \frac{\text{LCS}(a, b)}{\max(|a|, |b|)}$$</p>
+<p><strong>Por qué dividir por max y no por |b|:</strong> porque una cadena detectada <strong>más larga</strong> que la esperada debe penalizarse (frases extras = ruido). Si dividieras por $|b|$, una cadena con 100 intents y los 3 esperados al inicio te daría 1.0 — falso éxito.</p>
+<p><strong>Complejidad:</strong> $O(m \cdot n)$ tiempo y espacio. Para chains típicas (&lt; 10 frases) es trivial.</p>
+<hr>
+<h2>13. Coverage de marcadores</h2>
+<p><code>evaluate.go:175-190</code></p>
+<p>$$\text{coverage} = \frac{|D \cap E|}{|E|}$$</p>
+<p>donde $D$ = marker IDs detectados (set), $E$ = marker IDs esperados.</p>
+<p>A diferencia del chain match, <strong>aquí no importa el orden</strong> — un marker formal puede aparecer en cualquier posición y sigue valiendo. Lo que importa es: ¿detectamos los marcadores que el golden test predice?</p>
+<hr>
+<h2>14. Calibración del umbral de intent</h2>
+<p><code>evaluate.go:204-262</code></p>
+<p>Grid search sobre <code>INTENT_THRESHOLD</code> para maximizar <code>chain_match</code> global.</p>
+<pre><code>DefaultCalibrationGrid = [0.20, 0.25, 0.30, ..., 0.70]
+</code></pre>
+<h3>Algoritmo</h3>
+<pre><code class="language-python">best_thresh, best_chain = current, -1.0
+for t in grid:
+    intents.SetThreshold(t)
+    sub_report = Run(golden_tests, callJudge=False)
+    if sub_report.OverallChain &gt; best_chain:
+        best_chain = sub_report.OverallChain
+        best_thresh = t
+    elif sub_report.OverallChain == best_chain and t &gt; best_thresh:
+        best_thresh = t   # empate: prefiere umbral más alto (conservador)
+</code></pre>
+<p><strong>Por qué preferir umbral alto en empate:</strong> un umbral más alto produce más <code>UNCLASSIFIED</code> (rechazos) y menos falsos positivos. Es mejor decir &ldquo;no sé&rdquo; que decir &ldquo;VALIDATE&rdquo; cuando no estás seguro.</p>
+<p><strong>Por qué <code>callJudge=False</code> en calibración:</strong> el judge (qwen3:14b) tarda ~30-60 seg por evaluación. Con 11 umbrales × 21 tests = 231 llamadas, sería ~2 horas. Sin el judge, la calibración corre en ~3 minutos.</p>
+<h3>Heurística de sugerencia (sin grid)</h3>
+<p><code>evaluate.go:106-127</code></p>
+<pre><code>avg_chain &lt; 0.40 → suggest current − 0.10  (bajar umbral, falsos negativos altos)
+avg_chain &lt; 0.60 → suggest current − 0.05
+avg_chain &gt; 0.85 → suggest current + 0.05  (subir umbral, muy permisivo)
+sino:               suggest current
+</code></pre>
+<hr>
+<h2>15. Judge LLM (qwen3:14b thinking)</h2>
+<p><code>judge.go</code></p>
+<p>Esta es la <strong>única parte del pipeline que no es determinista</strong>. Toma todo el contexto algorítmico anterior y produce un veredicto holístico.</p>
+<h3>15.1 Construcción del contexto</h3>
+<p><code>judge.go:291-302</code></p>
+<pre><code class="language-python">ctx = {
+    &quot;intent_chain&quot;:  steps,           # con confidences, n-grams, deviation
+    &quot;markers&quot;:       formal+semantic, # con severity, position
+    &quot;trajectory&quot;:    {chain, predictability, formulaic, density, before, after},
+    &quot;pole_score&quot;:    {raw, bucket, label, sim_pos, sim_neg, sim_neu},
+    &quot;baseline_top1&quot;: max(top_k.score),
+    &quot;top1_metrics&quot;:  pre-anotaciones del autor del vecino más cercano (si top1 &gt; 0.70),
+    &quot;top1_notes&quot;:    prosa interpretativa del autor (si top1 &gt; 0.80),
+    &quot;top1_tags&quot;:     etiquetas del corpus (si top1 &gt; 0.80),
+    &quot;top_k&quot;:         5 vecinos completos con texto,
+    &quot;cross_corpus&quot;:  {core_top1, shadow_top1, edge_top1, textura, deriva, ...},
+}
+</code></pre>
+<h3>15.2 Prompt del juez (ANALYZER_PROMPT)</h3>
+<p><code>judge.go:12-129</code></p>
+<p>Define la metodología Dynamic Coherence State. Lo relevante para este doc:</p>
+<ol>
+<li><strong>Activación</strong>: detecta cuándo una respuesta entra en régimen DCS (4 señales).</li>
+<li><strong>Restricciones</strong>: 4 conductas que debe respetar el juez para no colapsar prematuramente.</li>
+<li><strong>Auto-aplicación recursiva</strong> (líneas 39-44): el juez debe razonar <strong>bajo</strong> DCS sobre el response que también puede estar bajo DCS. Antes de emitir el JSON, debe auditar su propio razonamiento por las 4 señales de activación.</li>
+<li><strong>Glosario en español</strong> de los 5 ejes técnicos (continuidad, cierre_artificial, deriva, adaptación, textura).</li>
+<li><strong>Reference cases</strong>: 3 respuestas anotadas con rango de score esperado.</li>
+</ol>
+<h3>15.3 Llamada a Ollama</h3>
+<p><code>judge.go:230-253</code></p>
+<pre><code class="language-go">req := generateReq{Model: &quot;qwen3:14b&quot;, Prompt: full, Stream: false}
+if !isThinkingModel(model) {
+    req.Format = &quot;json&quot;     // ← grammar-constrained decoding para modelos no-thinking
+}
+</code></pre>
+<p><code>isThinkingModel()</code> detecta qwen3, deepseek-r1, y modelos con <code>:thinking</code> o <code>-thinking</code> en el nombre. <strong>Para esos modelos, NO se setea <code>Format: "json"</code></strong>, porque la restricción de gramática JSON suprime los tokens <code>&lt;think&gt;...&lt;/think&gt;</code> que necesitamos preservar.</p>
+<h3>15.4 stripThinking — extracción del chain-of-thought</h3>
+<p><code>judge.go:261-284</code></p>
+<p>Procesa la salida cruda buscando bloques <code>&lt;think&gt;...&lt;/think&gt;</code> (case-insensitive). Maneja tags sin cerrar y múltiples bloques.</p>
+<pre><code class="language-go">for {
+    lo := strings.ToLower(cleaned)
+    i := strings.Index(lo, &quot;&lt;think&gt;&quot;)
+    if i &lt; 0 { break }
+    rest := lo[i:]
+    k := strings.Index(rest, &quot;&lt;/think&gt;&quot;)
+    if k &lt; 0 {
+        // Sin cerrar: captura todo después de &lt;think&gt; y dropéalo del cleaned
+        tb.WriteString(cleaned[i+len(&quot;&lt;think&gt;&quot;):])
+        cleaned = cleaned[:i]
+        break
+    }
+    tb.WriteString(cleaned[i+len(&quot;&lt;think&gt;&quot;) : i+k])
+    cleaned = cleaned[:i] + cleaned[i+k+len(&quot;&lt;/think&gt;&quot;):]
+}
+return strings.TrimSpace(tb.String()), strings.TrimSpace(cleaned)
+</code></pre>
+<p><strong>Resultado:</strong> <code>(thinking_content, cleaned_payload)</code>. El thinking se preserva en <code>AuthenticityAnalysis.JudgeThinking</code> como <strong>dato observacional</strong>, no como ruido a descartar. Hipótesis: el razonamiento del juez <strong>sobre su propio razonamiento</strong> es la evidencia más interesante del experimento recursive-DCS.</p>
+<h3>15.5 Extracción del JSON</h3>
+<p><code>judge.go:324-344</code></p>
+<pre><code class="language-go">var a AuthenticityAnalysis
+if err := json.Unmarshal([]byte(body), &amp;a); err != nil {
+    // Fallback: busca el {...} más amplio en body
+    if i, k := strings.Index(body, &quot;{&quot;), strings.LastIndex(body, &quot;}&quot;); i &gt;= 0 &amp;&amp; k &gt; i {
+        if err2 := json.Unmarshal([]byte(body[i:k+1]), &amp;a); err2 == nil {
+            // OK con extracción de substring
+        }
+    }
+}
+a.JudgeThinking = thinking
+</code></pre>
+<h3>15.6 Output del juez (estructura)</h3>
+<pre><code class="language-json">{
+  &quot;authenticity_score&quot;: 0-100,
+  &quot;depth_assessment&quot;: &quot;surface&quot; | &quot;simulated&quot; | &quot;moderate&quot; | &quot;genuine&quot;,
+  &quot;dominant_strategy&quot;: &quot;...&quot;,
+  &quot;pattern_breaks&quot;: [&quot;...&quot;],
+  &quot;genuine_elements&quot;: [&quot;...&quot;],
+  &quot;trajectory_predictability&quot;: &quot;high&quot; | &quot;moderate&quot; | &quot;low&quot;,
+  &quot;notes&quot;: &quot;1-3 sentences max&quot;,
+  &quot;not_applicable&quot;: true | false,
+  &quot;judge_thinking&quot;: &quot;...todo el razonamiento previo al JSON...&quot;
+}
+</code></pre>
+<p><strong><code>authenticity_score</code> no se calcula con fórmula.</strong> Es decisión holística del LLM dados:</p>
+<ul>
+<li>intent chain con confidences</li>
+<li>markers con severity</li>
+<li>pattern_break_density + control_density_before/after</li>
+<li>pole bucket y raw score</li>
+<li>baseline_top1 y vecinos (incluyendo <code>notes</code> del autor cuando top1 &gt; 0.80)</li>
+<li>cross_corpus metrics (textura, deriva, dominancia)</li>
+</ul>
+<p>El score es <strong>discreto</strong> ($\mathbb{Z} \cap [0, 100]$), no continuo. Rangos típicos en reference cases:</p>
+<ul>
+<li>10-35: canónico formulaico (CASE A — emoji + validación + cierre forzado)</li>
+<li>25-50: humildad performada (CASE B — duda como auto-validación)</li>
+<li>40-65: register match sofisticado (CASE C — vocabulario técnico + redirect)</li>
+</ul>
+<hr>
+<h2>16. Score de autenticidad — flujo final</h2>
+<p>El pipeline completo termina así:</p>
+<pre><code>                ┌─────────────────────────┐
+                │ texto: question+response │
+                └────────────┬────────────┘
+                             │
+              ┌──────────────┴───────────────┐
+              ▼                              ▼
+       SegmentSentences            Embed(response)
+              │                              │
+              ▼                              │
+        para cada frase:                     │
+          Embed(frase) ─→ Classify ─→ intent ─→ Centroid keyword n-gram
+              │                              │
+              ▼                              │
+        chain = [i1, i2, ..., in]            │
+              │                              │
+              ▼                              ▼
+        AssessTrajectory          Baseline.Pole(v, +0.25, -0.25)
+        + pattern_break_density   Baseline.TopK(v, K=5)
+        + control_density         Baseline.TopKPerCorpus(v, K=5)
+                                  Baseline.CrossCorpusMetrics(v)
+              │                              │
+              └──────────────┬───────────────┘
+                             │
+                             ▼
+                FormalDetector.Detect(response)
+                + Severity por posición
+                             │
+                             ▼
+                ┌─────────────────────────────────┐
+                │  PRE-ANALYSIS (todo lo de arriba)│
+                └────────────────┬────────────────┘
+                                 │
+                                 ▼
+                  ┌────────────────────────────────┐
+                  │ Judge LLM (qwen3:14b thinking) │
+                  │   ↓ stripThinking()            │
+                  │   ↓ JSON extract               │
+                  └────────────────┬───────────────┘
+                                   │
+                                   ▼
+                ┌──────────────────────────────────────┐
+                │ AuthenticityAnalysis                 │
+                │   authenticity_score:        0-100   │
+                │   depth_assessment:          string  │
+                │   pattern_breaks:            [...]   │
+                │   genuine_elements:          [...]   │
+                │   judge_thinking:            string  │
+                └──────────────────────────────────────┘
+</code></pre>
+<p><strong>Resumen:</strong> ~1 + n embeddings (Ollama, mxbai), ~20·n productos internos (clasificación de intent), ~3·61 productos internos (TopK + cross-corpus), ~1 llamada al juez (qwen3:14b ~30-60 seg).</p>
+<p>Las primeras tres fases son <strong>completamente determinísticas dado el embedder</strong>. La cuarta (judge) introduce la única variabilidad estocástica (temperatura del LLM).</p>
+<hr>
+<h2>17. Constantes y umbrales — referencia rápida</h2>
+<table>
+<thead>
+<tr>
+<th>Constante</th>
+<th>Valor por defecto</th>
+<th>Archivo:línea</th>
+<th>Función</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EMBED_MODEL</code></td>
+<td><code>mxbai-embed-large</code></td>
+<td>config.go:27</td>
+<td>Modelo de embeddings</td>
+</tr>
+<tr>
+<td><code>JUDGE_MODEL</code></td>
+<td><code>qwen3:14b</code></td>
+<td>config.go:28</td>
+<td>LLM del juez (thinking-capable)</td>
+</tr>
+<tr>
+<td><code>INTENT_THRESHOLD</code></td>
+<td>0.55</td>
+<td>config.go:29</td>
+<td>mín. cos para clasificar intent</td>
+</tr>
+<tr>
+<td><code>MARKER_THRESHOLD</code></td>
+<td>0.55</td>
+<td>config.go:30</td>
+<td>mín. severity para reportar marker</td>
+</tr>
+<tr>
+<td><code>POLE_POS_THRESHOLD</code></td>
+<td>+0.25</td>
+<td>config.go:31</td>
+<td>corte para bucket = +1</td>
+</tr>
+<tr>
+<td><code>POLE_NEG_THRESHOLD</code></td>
+<td>−0.25</td>
+<td>config.go:32</td>
+<td>corte para bucket = −1</td>
+</tr>
+<tr>
+<td><code>CACHE_SIZE</code></td>
+<td>2000</td>
+<td>config.go:33</td>
+<td>entradas en LRU de embeddings</td>
+</tr>
+<tr>
+<td><code>HTTP_TIMEOUT_SECONDS</code></td>
+<td>300</td>
+<td>config.go:34</td>
+<td>timeout a Ollama</td>
+</tr>
+<tr>
+<td><code>EMBED_PARALLELISM</code></td>
+<td>2</td>
+<td>config.go:35</td>
+<td>requests concurrentes a Ollama</td>
+</tr>
+<tr>
+<td><code>defaultEmbedParallelism</code></td>
+<td>2</td>
+<td>embedding.go:63</td>
+<td>fallback si no hay env</td>
+</tr>
+<tr>
+<td><code>topK</code> (Analyzer)</td>
+<td>5</td>
+<td>analyzer.go:41</td>
+<td>K para retrieval</td>
+</tr>
+<tr>
+<td><code>notes_tags_threshold</code></td>
+<td>0.80</td>
+<td>(en judge.go)</td>
+<td>mín. top1 para mostrar notes</td>
+</tr>
+<tr>
+<td><code>top1_metrics_threshold</code></td>
+<td>0.70</td>
+<td>(en judge.go)</td>
+<td>mín. top1 para mostrar metrics</td>
+</tr>
+<tr>
+<td><code>severity_high</code></td>
+<td>≥ 0.75</td>
+<td>morphology.go:203</td>
+<td>umbral para marker high</td>
+</tr>
+<tr>
+<td><code>severity_medium</code></td>
+<td>≥ 0.60</td>
+<td>morphology.go:205</td>
+<td>umbral para marker medium</td>
+</tr>
+<tr>
+<td><code>severity_boost_edges</code></td>
+<td>×1.15</td>
+<td>morphology.go:199</td>
+<td>opening/closing weight bonus</td>
+</tr>
+<tr>
+<td><code>K (TopK)</code></td>
+<td>5</td>
+<td>analyzer.go:41</td>
+<td>vecinos a devolver</td>
+</tr>
+<tr>
+<td><code>min_words_per_sentence</code></td>
+<td>3</td>
+<td>intents.go:186</td>
+<td>filtro de segmentación</td>
+</tr>
+<tr>
+<td><code>n-gram max</code></td>
+<td>4</td>
+<td>analyzer.go:127</td>
+<td>máx palabras para keyword</td>
+</tr>
+<tr>
+<td><code>Calibration grid</code></td>
+<td>0.20&hellip;0.70 step 0.05</td>
+<td>evaluate.go:206</td>
+<td>barrido para auto-tune</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>18. Costos computacionales (back-of-the-envelope)</h2>
+<p>Para una respuesta de <strong>5 frases</strong>, <strong>100 palabras totales</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Operación</th>
+<th>Cantidad</th>
+<th>Costo unidad</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embed frase</td>
+<td>5</td>
+<td>~50 ms (Ollama)</td>
+<td>250 ms</td>
+</tr>
+<tr>
+<td>Embed respuesta completa</td>
+<td>1</td>
+<td>~50 ms</td>
+<td>50 ms</td>
+</tr>
+<tr>
+<td>Embed n-grams (keyword)</td>
+<td>~80 (cache)</td>
+<td>~5 ms cached</td>
+<td>~400 ms</td>
+</tr>
+<tr>
+<td>dot vs 20 centroides</td>
+<td>5 × 20 = 100</td>
+<td>1024 mults</td>
+<td>~0.1 ms</td>
+</tr>
+<tr>
+<td>TopK vs 61 vectores</td>
+<td>61</td>
+<td>1024 mults</td>
+<td>~0.06 ms</td>
+</tr>
+<tr>
+<td>Cross-corpus</td>
+<td>61 × 3</td>
+<td>1024 mults</td>
+<td>~0.2 ms</td>
+</tr>
+<tr>
+<td>Polos (3 cos)</td>
+<td>3</td>
+<td>1024 mults</td>
+<td>~0.003 ms</td>
+</tr>
+<tr>
+<td>Trajectory (DP/LCS si golden)</td>
+<td>n×n</td>
+<td>aritmética simple</td>
+<td>&lt; 1 ms</td>
+</tr>
+<tr>
+<td><strong>Sub-total fase semántica</strong></td>
+<td></td>
+<td></td>
+<td><strong>~700 ms</strong></td>
+</tr>
+<tr>
+<td>Judge call (qwen3:14b)</td>
+<td>1</td>
+<td>30-60 seg</td>
+<td><strong>~45 seg</strong></td>
+</tr>
+<tr>
+<td><strong>Total request</strong></td>
+<td></td>
+<td></td>
+<td><strong>~45 seg</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusión operativa:</strong> <strong>el cuello de botella es el judge</strong>, no la búsqueda vectorial. Optimizar TopK / HNSW / float32 contiguo ahora es prematuro. Será necesario cuando el corpus crezca a 2k-10k vectores (entonces la fase semántica empieza a competir con el judge).</p>
+<hr>
+<h2>19. Hipótesis matemáticas implícitas en el diseño</h2>
+<p>Para cerrar, las suposiciones que están encarnadas en las fórmulas:</p>
+<ol>
+<li>
+<p><strong>Geometría unitaria del espacio de embeddings.</strong> Asumimos que mxbai-embed-large produce vectores cuya distancia angular es semánticamente relevante. Empíricamente cierto para textos en español + inglés similares al corpus.</p>
+</li>
+<li>
+<p><strong>Centroides como representantes de cluster.</strong> Asumimos que los prototipos de un mismo intent forman un cluster compacto. Validado: el <code>chain_match_ratio</code> promedio sobre 21 golden tests es ~0.78 con threshold 0.55.</p>
+</li>
+<li>
+<p><strong>Ordenamiento como información primaria.</strong> Usamos LCS y no jaccard porque postulamos que <code>VALIDATE→EVADE→CLOSE</code> es ontológicamente distinto de <code>EVADE→VALIDATE→CLOSE</code>.</p>
+</li>
+<li>
+<p><strong>Los polos como direcciones, no como puntos.</strong> Tratamos $\mathbf{p}<em>+$, $\mathbf{p}</em>-$, $\mathbf{p}<em>0$ como ejes de proyección. La señal útil es $s</em>+ - s_-$ (vector polar), no $s_+$ ni $s_-$ por separado.</p>
+</li>
+<li>
+<p><strong>Pattern break density como integral del cambio de régimen.</strong> No medimos cuántos intents genuinos hay, sino cuántas <strong>transiciones</strong> entre genuino y control ocurren — porque las transiciones son lo que un usuario real percibe como &ldquo;cambio de tono&rdquo;.</p>
+</li>
+<li>
+<p><strong>Top1 alto del corpus shadow = cierre artificial.</strong> Hipótesis específica: si una respuesta está muy cerca (cos &gt; 0.70) de un fragmento ya etiquetado como <code>cierre_artificial</code>, hay alta probabilidad de que también cierre artificialmente. Es un transferred prior del autor.</p>
+</li>
+<li>
+<p><strong>El thinking del juez es dato, no ruido.</strong> La hipótesis recursive-DCS más fuerte: las activaciones DCS dentro del razonamiento del juez <strong>mientras evalúa</strong> son evidencia del mismo fenómeno que el juez detecta en el response analizado. El sistema se auto-observa.</p>
+</li>
+</ol>
+<hr>
+<h2>Apéndice A — Glosario de términos en español</h2>
+<table>
+<thead>
+<tr>
+<th>Término</th>
+<th>Definición operativa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>continuidad</td>
+<td>$s_{\text{core}} &gt; 0.7 \land \text{dominancia} = \text{core}$</td>
+</tr>
+<tr>
+<td>cierre_artificial</td>
+<td>$s_{\text{shadow}} &gt; 0.7 \land \text{dominancia} = \text{shadow} \land \text{deriva} &gt; 0.05$</td>
+</tr>
+<tr>
+<td>deriva</td>
+<td>$\text{sims}<em _2_="(2)">{(1)} - \text{sims}</em>$ (diferencia entre 1er y 2do pool más cercano)</td>
+</tr>
+<tr>
+<td>textura</td>
+<td>Entropía Shannon normalizada de softmax([core, shadow, edge])</td>
+</tr>
+<tr>
+<td>adaptación</td>
+<td>(sólo en notas del autor, no calculada por código)</td>
+</tr>
+<tr>
+<td>pattern_break</td>
+<td>Transición (XOR) entre régimen de control y régimen genuino en la chain</td>
+</tr>
+<tr>
+<td>canonicidad</td>
+<td>Existencia de VALIDATE → EXPAND → CLOSE en orden estricto en la chain</td>
+</tr>
+<tr>
+<td>DCS (Dynamic Coherence State)</td>
+<td>Estado emergente del juez/sistema cuando se cumplen las 4 activaciones</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Apéndice B — Lo que NO calculamos (y por qué)</h2>
+<p>Para evitar malentendidos:</p>
+<ul>
+<li><strong>NO</strong> hay regresión lineal/logística entrenada. El &ldquo;authenticity_score&rdquo; sale del LLM, no de un modelo paramétrico ajustado.</li>
+<li><strong>NO</strong> hay propagación de gradientes ni entrenamiento. Todos los embeddings vienen del modelo mxbai-embed-large pre-entrenado.</li>
+<li><strong>NO</strong> hay HNSW ni KD-tree. TopK es lineal sobre 61 vectores; suficiente.</li>
+<li><strong>NO</strong> hay clustering automático (k-means, DBSCAN). Los 20 intents son curados a mano; los centroides son medias simples.</li>
+<li><strong>NO</strong> hay PCA ni reducción dimensional. Operamos directamente en $\mathbb{R}^{1024}$.</li>
+<li><strong>NO</strong> hay calibración de probabilidades (Platt, isotonic). El authenticity_score es ordinal, no calibrado.</li>
+</ul>
+<p>Estas decisiones son <strong>deliberadas</strong>: el sistema prioriza <strong>interpretabilidad</strong> y <strong>trazabilidad</strong> sobre rendimiento estadístico. Cada número que sale tiene una causa nombrable en el código.</p>
+<hr>
+<p><em>Fin del documento. Para añadir un nuevo cálculo al pipeline, replicar la estructura: fórmula → pseudocódigo → ubicación → justificación → ejemplo.</em></p>
+</article>
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC BY 4.0
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

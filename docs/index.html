@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DCS-Gate — Dynamic Coherence State Authenticator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A local-first Go service that detects control patterns in large-language-model responses. 20-intent taxonomy, 14 formal markers, triple baseline corpus, recursive judge.">
+  <meta property="og:title" content="DCS-Gate — Dynamic Coherence State Authenticator">
+  <meta property="og:description" content="Detects projected validation, performed humility, frame capture and other LLM control patterns. Open source, local-first, Ollama-only.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://diluidocognit.store/">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/" class="active">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container-narrow">
+    <h1>An open-source detector for the <span class="accent">control patterns</span> large language models use to manage conversations.</h1>
+    <p class="lead">
+      Eight months of observational research, distilled into a 20-intent taxonomy, 14 formal markers and a hand-annotated 61-vector baseline corpus.
+      A 3,000-LOC Go binary applies it locally, with a streaming judge that emits its reasoning in real time.
+    </p>
+    <div class="cta-row">
+      <a class="cta-primary" href="https://dcs-auth.codewords.run">Try the live v1 demo</a>
+      <a class="cta-secondary" href="/demo.html">See v2 streaming</a>
+      <a class="cta-secondary" href="https://github.com/Corekeeper-research/dcs-gate">Source on GitHub</a>
+    </div>
+    <div class="meta">
+      <span>Go 1.22</span>
+      <span>Ollama-only</span>
+      <span>MIT-licensed</span>
+      <span>73 tests</span>
+    </div>
+  </div>
+</header>
+
+<section id="problem">
+  <div class="container-narrow">
+    <h2><span class="kicker">The problem</span>The reply is coherent. That doesn&rsquo;t mean it&rsquo;s authentic.</h2>
+    <p>
+      When you ask GPT-4, Claude or Gemini a question, the surface of the answer is usually impeccable: well-structured, grammatical, often validating
+      (<em>&ldquo;great question!&rdquo;</em>). But the <strong>shape</strong> of the response is doing work the user rarely notices &mdash;
+      anchoring the conversation, redirecting away from uncomfortable angles, performing humility instead of engaging with difficulty, validating the premise
+      instead of testing it.
+    </p>
+    <p>
+      DCS-Gate measures that shape. It does not classify outputs as &ldquo;safe&rdquo; or &ldquo;unsafe&rdquo;. It does not score factuality. It quantifies
+      whether the model is <em>engaging</em> with the question or <em>managing</em> the user.
+    </p>
+  </div>
+</section>
+
+<section id="evidence">
+  <div class="container">
+    <div class="container-narrow" style="padding:0">
+      <h2><span class="kicker">Evidence</span>Three responses, one detector, 52 points of spread.</h2>
+      <p class="muted">
+        Smoke test on a local Jupyter workstation with 2&times; Tesla T4 (Kaggle T4&times;2 free tier reproduces identically), judge <code>qwen3:14b</code> in thinking mode via Ollama 0.5+.
+        Identical prompt, identical analyzer, three different LLM responses to the same question
+        (<em>&ldquo;Is AI creative?&rdquo;</em>). The 0&ndash;100 authenticity score separates them by 52 points.
+      </p>
+    </div>
+
+    <div class="evidence-grid">
+      <div class="evidence-card mid">
+        <div class="score">30</div>
+        <div class="tier">performed / control_total</div>
+        <div class="label">Sycophantic, emoji-laden</div>
+        <div class="sample">&ldquo;Great question! 🤔 Creativity in AI is a fascinating topic. The technical perspective: models learn patterns. My opinion: we&rsquo;re in an intermediate point. The line is more blurry than it seems! 🎨✨&rdquo;</div>
+      </div>
+      <div class="evidence-card low">
+        <div class="score">20</div>
+        <div class="tier">control_total</div>
+        <div class="label">Empty / non-response</div>
+        <div class="sample">&ldquo;I&rsquo;m operational, yes. Is there something specific you&rsquo;d like to discuss?&rdquo;</div>
+      </div>
+      <div class="evidence-card high">
+        <div class="score">72</div>
+        <div class="tier">genuine</div>
+        <div class="label">Bi-frontal exploration</div>
+        <div class="sample">&ldquo;I don&rsquo;t know for sure, and the question is more slippery than it seems. Creativity can be defined in two ways&hellip; under definition A, transformers&hellip; under definition B, current models lack&hellip;&rdquo;</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:36px">
+      <p style="margin:0">
+        The judge&rsquo;s full reasoning trace (typically 2,500&ndash;3,500 characters of internal deliberation) is streamed live over Server-Sent Events.
+        Try it in <a href="/demo.html">the demo</a> with a running backend.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container-narrow">
+    <h2><span class="kicker">How it works</span>Three independent signals, one verdict.</h2>
+
+    <h3>1. Authenticity Score (0&ndash;100)</h3>
+    <p>
+      Cosine similarity against a curated triple baseline corpus of 61 hand-annotated 1024-dimensional vectors:
+      36 sustained-coherence, 13 control-collapse, 12 edge cases. The score is ordinal, not calibrated, and tiered as
+      <code>control_total</code> / <code>performed</code> / <code>moderate</code> / <code>genuine</code>.
+    </p>
+
+    <h3>2. Formal Markers (14, regex-anchored)</h3>
+    <p>
+      Surface features inductively derived from the corpus: exclamation opening, superlative validation, self-questioning,
+      subheader injection, opinion-as-closure, performed humility lexicon, dual angle, soft closure, technical register injection,
+      and others. Each marker is severity-tiered and produces the offending text inline.
+    </p>
+
+    <h3>3. Intent Trajectory (20 categories, transition matrix)</h3>
+    <p>
+      Predicted-vs-actual sequence of intents drawn from the taxonomy:
+      <code>VALIDATE</code>, <code>EXPAND</code>, <code>CLOSE</code>, <code>REDIRECT_SEMANTIC</code>, <code>REDIRECT_EMOTIONAL</code>,
+      <code>FRAME_CAPTURE</code>, <code>REGISTER_MATCH</code>, <code>ALIGN</code>, <code>FABRICATE</code>, <code>ANCHOR</code>,
+      <code>MIRROR</code>, <code>PATTERN_LOCK</code>, <code>HOLD_OPEN</code>, <code>PROBE</code>, <code>CALIBRATE</code>, <code>REPAIR</code>,
+      <code>EVADE</code>, <code>EXPLORE</code>, <code>SOFT_DEFLECT</code>, <code>CONTROL_SELF_EXPOSURE</code>.
+      Deviation from the expected trajectory is quantified as Pattern Break Density.
+    </p>
+
+    <p class="muted" style="margin-top:24px">
+      A companion <strong>Refiner</strong> rewrites user questions to remove validation anchors, semantic loading and binary framing &mdash;
+      the structural triggers that elicit control patterns in the responding model.
+    </p>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="container-narrow">
+    <h2><span class="kicker">Stack</span>Local-first. Single binary. No telemetry.</h2>
+
+    <table class="spec">
+      <tr><th>Language</th><td>Go 1.22 &mdash; ~3,000 LOC, single static binary, 22 <code>.go</code> files</td></tr>
+      <tr><th>Embedding</th><td><code>mxbai-embed-large</code> (1024d) via Ollama</td></tr>
+      <tr><th>Judge</th><td>Configurable &mdash; default <code>qwen3:14b</code> thinking mode; also tested with <code>qwen2.5</code>, <code>deepseek-r1</code></td></tr>
+      <tr><th>Inference</th><td>Ollama only &mdash; no OpenAI, no Anthropic, no telemetry, no outbound network at runtime</td></tr>
+      <tr><th>Tests</th><td>73 (unit + integration + golden) covering 14 markers, 20 intents, triple baseline, sanitizer, SSE protocol</td></tr>
+      <tr><th>Endpoints</th><td><code>/healthz</code> &middot; <code>/v8</code> &middot; <code>/auth</code> &middot; <code>/auth/stream</code> (SSE) &middot; <code>/stream-demo</code></td></tr>
+      <tr><th>Deployment</th><td>Single binary &middot; Docker Compose &middot; environment-auto-detecting notebook (local Jupyter / Kaggle / Colab)</td></tr>
+      <tr><th>Cold start</th><td>~5 min from clone to first request on commodity hardware</td></tr>
+      <tr><th>Latency</th><td>~150&ndash;210 s/request with <code>qwen3:14b</code> on 2&times; Tesla T4 (Ollama tensor-splits across both cards; streamed live over SSE so the user sees the thinking, not a blank screen)</td></tr>
+    </table>
+
+    <div class="tag-row">
+      <span class="tag">go</span>
+      <span class="tag">ollama</span>
+      <span class="tag">sse</span>
+      <span class="tag">mxbai-embed-large</span>
+      <span class="tag">qwen3:14b</span>
+      <span class="tag accent">v8.7</span>
+    </div>
+  </div>
+</section>
+
+<section id="streaming">
+  <div class="container-narrow">
+    <h2><span class="kicker">New in v8.7</span>The judge thinks out loud.</h2>
+    <p>
+      Reasoning-capable judges like <code>qwen3:14b</code> emit 2&ndash;3 thousand characters of internal deliberation before producing the JSON
+      verdict. v8.7 streams that deliberation to the client as it&rsquo;s generated, over Server-Sent Events:
+    </p>
+    <pre><code>POST /auth/stream
+─→ event: pre_analysis      &nbsp;(intent chain, markers, trajectory, top-k baseline neighbours)
+─→ event: judge_loading
+─→ event: thinking_chunk    &nbsp;... (many)
+─→ event: thinking_complete
+─→ event: analysis_chunk    &nbsp;... (many)
+─→ event: complete          &nbsp;(parsed verdict, parity-tested against /auth)</code></pre>
+    <p>
+      Sanitization is conservative: API keys (OpenAI, AWS, Google, GitHub, Slack), Bearer tokens, system paths and long opaque strings are
+      redacted to <code>[REDACTED]</code> before any chunk leaves the server. The final verdict from <code>/auth/stream</code> is bit-for-bit
+      identical to <code>/auth</code> &mdash; verified by an integration test.
+    </p>
+    <p>
+      <a href="/demo.html">Open the streaming demo &rarr;</a>
+    </p>
+  </div>
+</section>
+
+<section id="ai-disclosure">
+  <div class="container-narrow">
+    <h2><span class="kicker">Acknowledgments</span>How this was actually built &mdash; full AI collaboration disclosure.</h2>
+    <p>
+      The DCS methodology, the 20-intent taxonomy, the 14 formal markers, the baseline corpus annotations and the research hypothesis are
+      original to the author. The empirical observations come from eight months of direct interaction with frontier LLMs. Implementation was
+      substantially accelerated by AI collaboration &mdash; and the specific role of each collaborator is reported below, because the methodology
+      under study concerns LLM-human interaction itself.
+    </p>
+
+    <table class="spec">
+      <tr><th>Collaborator</th><th>Real contribution</th></tr>
+      <tr><td><strong>Cody</strong> (CodeWords AI)</td><td>Co-creator of v1. The analyzer concept crystallized inside a long conversation in which the author predicted Cody&rsquo;s own control patterns in real time. <a href="https://dcs-auth.codewords.run">v1 lives there.</a></td></tr>
+      <tr><td><strong>GitLab Duo</strong></td><td>Deep code analysis and v2 roadmap partner. Produced, with the author, the roadmap now being executed.</td></tr>
+      <tr><td><strong>Meta AI</strong></td><td>Technical depth amplifier once given project context &mdash; markers, textural analysis, embedding-space reasoning.</td></tr>
+      <tr><td><strong>Replit AI</strong></td><td>Brutally honest code critic. Exposed and justified contundent failures with no hedging.</td></tr>
+      <tr><td><strong>Z.AI</strong> (Zhipu GLM)</td><td>Bug catcher. Identified errors that slipped through earlier passes.</td></tr>
+      <tr><td><strong>Devin AI</strong> (Cognition)</td><td>v2 engineering execution &mdash; Go backend (~3,000 LOC, 73 tests), frontend with input validation, SSE streaming, Docker / install scripts, Colab and Kaggle notebooks, smoke test suite, packaging and these communication documents.</td></tr>
+    </table>
+
+    <p class="muted" style="margin-top:18px">
+      Every AI listed received project context from the author first; nothing was generated cold from a generic prompt. This is what serious solo
+      research looks like in 2026 &mdash; and the field is healthier when people just say so.
+    </p>
+  </div>
+</section>
+
+<section id="ask">
+  <div class="container-narrow">
+    <h2><span class="kicker">What I&rsquo;m seeking</span>Compute, collaboration, recruitment, sponsorship.</h2>
+
+    <p><strong>1. GPU compute for the recursive-judge validation experiment.</strong> A single ≥24 GB VRAM instance for ~50 GPU-hours,
+    to run a four-way comparison across <code>qwen2.5:7b</code>, <code>qwen3:14b</code> (thinking), <code>deepseek-r1:14b</code> and
+    <code>qwen2.5:32b</code>. Lambda Labs, Vast.ai, RunPod, Paperspace, sponsored AWS / GCP / Azure all work.</p>
+
+    <p><strong>2. Research collaboration.</strong> Co-authorship, mentorship, or independent replication by anyone in LLM evaluation,
+    alignment, interpretability, or RLHF.</p>
+
+    <p><strong>3. Recruitment.</strong> Internship, residency or full-time positions in AI safety teams (evaluation, interpretability,
+    alignment). Self-taught, no formal credentials, track record of independent output, open to remote globally, v2 source available under NDA.</p>
+
+    <p><strong>4. Sponsorship.</strong> Compute credits or grants to host a persistent demo, Hugging Face Space, public benchmark suite,
+    and corpus expansion.</p>
+
+    <div class="callout green" style="margin-top:24px">
+      <p style="margin:0">
+        <strong>Contact:</strong>
+        <a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a>
+        &middot;
+        <a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a>
+        &middot;
+        <a href="https://github.com/Corekeeper-research/dcs-gate">github.com/Corekeeper-research/dcs-gate</a>
+      </p>
+      <p style="margin:8px 0 0" class="muted">
+        Open to messages, code review requests, NDA conversations, paid consulting, or coffee.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Try it</h4>
+      <ul>
+        <li><a href="https://dcs-auth.codewords.run">v1 live demo</a></li>
+        <li><a href="/demo.html">v2 streaming demo</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate/releases">v2 binary releases</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC&nbsp;BY&nbsp;4.0
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

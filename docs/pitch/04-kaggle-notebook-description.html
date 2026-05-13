@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Kaggle — Notebook Description (~5500 chars) — DCS-Gate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+<article class="markdown">
+  <a class="back" href="/docs.html">Back to documentation</a>
+  <h1>Kaggle — Notebook Description (~5500 chars)</h1>
+<p><em>Para usar como descripción larga de un Notebook Kaggle público o como descripción de un Dataset (si subes el corpus). Audiencia: ML engineers, researchers, data scientists. Más técnico, menos personal.</em></p>
+<hr>
+<h2>DCS-Gate: Dynamic Coherence State Authenticator</h2>
+<h3>A Research-Grade Tool for Detecting Control Patterns in LLM Outputs</h3>
+<p>This notebook deploys <strong>DCS-Gate</strong>, an open-source system for detecting and characterizing the subtle control mechanisms large language models use to manage conversations — projected validation, performed humility, frame capture, register match, complacency induction, and 15 others — derived inductively from 8 months of observational research across GPT-4, Claude 3, Gemini, and other frontier models.</p>
+<p><strong>Live v1 demo:</strong> https://dcs-auth.codewords.run</p>
+<h3>Methodology</h3>
+<p>The Dynamic Coherence State (DCS) framework provides three independent signals per LLM response:</p>
+<ol>
+<li><strong>Authenticity Score (0–100)</strong> with categorical tier (<code>control_total</code>, <code>performed</code>, <code>moderate</code>, <code>genuine</code>), derived from cosine similarity against a curated triple baseline corpus of 61 hand-annotated 1024-dimensional vectors (36 sustained-coherence + 13 control-collapse + 12 edge cases).</li>
+<li><strong>Formal Markers</strong> — 14 regex-anchored, severity-tiered surface features (exclamation opening, superlative validation, self-questioning, subheader injection, opinion-as-closure, performed humility lexicon, dual angle, soft closure, technical register injection, and others).</li>
+<li><strong>Intent Trajectory</strong> — predicted-vs-actual sequence of intents drawn from a 20-category taxonomy (VALIDATE, EXPAND, CLOSE, REDIRECT_SEMANTIC, REDIRECT_EMOTIONAL, FRAME_CAPTURE, REGISTER_MATCH, FABRICATE, ANCHOR, MIRROR, PATTERN_LOCK, HOLD_OPEN, PROBE, CALIBRATE, REPAIR, EVADE, EXPLORE, ALIGN, SOFT_DEFLECT, CONTROL_SELF_EXPOSURE) with a learned transition matrix and Pattern Break Density quantification.</li>
+</ol>
+<p>A companion <strong>Refiner</strong> module applies DCS-asymmetric methodology to rewrite user questions, removing validation anchors, loaded semantics, binary framing, and structural defaults that elicit control patterns in the responding model.</p>
+<h3>Technical Stack</h3>
+<ul>
+<li><strong>Language:</strong> Go 1.22 (~3,000 LOC, 22 .go files, single static binary)</li>
+<li><strong>Tests:</strong> 73 unit + integration tests (incl. SSE protocol parity, sanitizer cases, 21 golden tests)</li>
+<li><strong>Inference:</strong> Ollama only — no external API dependencies</li>
+<li><strong>Embedding:</strong> <code>mxbai-embed-large</code> (1024d)</li>
+<li><strong>Judge:</strong> configurable; default <code>qwen3:14b</code> in Ollama 0.5+ thinking mode</li>
+<li><strong>Endpoints:</strong> <code>/healthz</code>, <code>/v8</code> inventory, <code>/auth</code>, <code>/auth/stream</code> (SSE), <code>/stream-demo</code></li>
+<li><strong>Deployment:</strong> Docker Compose; environment-auto-detecting reproducibility notebook (works on local Jupyter, Kaggle hosted, or Colab hosted)</li>
+<li><strong>Latency:</strong> ~150–210 sec per <code>/auth/stream</code> request on 2 × Tesla T4 with <code>qwen3:14b</code> thinking mode (Ollama layer-splits the model across both cards) — streamed live as Server-Sent Events so the client sees the judge&rsquo;s reasoning trace (typically 2,000–3,500 characters) as it&rsquo;s produced, rather than waiting in silence</li>
+<li><strong>License:</strong> MIT (code) / CC BY 4.0 (corpus + methodology)</li>
+</ul>
+<h3>Data Assets (versioned, hand-annotated)</h3>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Description</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>baseline_core.jsonl</code></td>
+<td>Sustained-coherence reference vectors</td>
+<td>36</td>
+</tr>
+<tr>
+<td><code>baseline_shadow.jsonl</code></td>
+<td>Control-collapse reference vectors</td>
+<td>13</td>
+</tr>
+<tr>
+<td><code>baseline_edge.jsonl</code></td>
+<td>Edge / ambiguous reference vectors</td>
+<td>12</td>
+</tr>
+<tr>
+<td><code>formal_markers.json</code></td>
+<td>Markers with regex, severity, human notes</td>
+<td>14</td>
+</tr>
+<tr>
+<td><code>intent_prototypes.json</code></td>
+<td>Intent categories with prototype examples</td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>poles_1024.json</code></td>
+<td>Canonical pos/neg/neu poles</td>
+<td>3 × 1024d</td>
+</tr>
+<tr>
+<td><code>golden_tests.json</code></td>
+<td>Hand-annotated test cases with expected chains and ranges</td>
+<td>21</td>
+</tr>
+</tbody>
+</table>
+<h3>Reproducibility</h3>
+<p>This notebook reproduces the v2 stack end-to-end. The reference environment is a 2 × Tesla T4 setup (the author&rsquo;s local Jupyter workstation; Kaggle T4×2 free tier reproduces it identically). The notebook auto-detects local Jupyter / Kaggle hosted / Colab hosted and adapts paths and judge model accordingly:</p>
+<ol>
+<li>Verify T4 GPU available</li>
+<li>Install Ollama + Go 1.22 + pyngrok</li>
+<li>Pull <code>mxbai-embed-large</code> (670 MB) + <code>qwen3:14b</code> (9 GB, supports Ollama 0.5+ <code>thinking</code> field)</li>
+<li>Extract repository ZIP + <code>go build</code></li>
+<li>Launch authenticator on port 8081, wait for triple baseline + intent centroid construction (~2 min)</li>
+<li>Open ngrok tunnel for public access</li>
+<li>Run smoke tests: <code>/healthz</code>, <code>/v8</code> inventory, <code>/auth</code> round-trip on canonical test case</li>
+</ol>
+<p>Total cold-start time: ~9 min on first run; ~3 min on subsequent runs (models cached).</p>
+<h3>Validation Hypothesis — Partially Confirmed</h3>
+<p>The core methodological claim of DCS is that a judge model used in recursive coherence analysis must itself demonstrate recursive reasoning about its own reasoning. As of v8.7, <code>qwen3:14b</code> in Ollama 0.5+ thinking mode is the default judge and runs on 2 × Tesla T4 hardware (the author&rsquo;s local Jupyter workstation; Kaggle T4×2 free tier reproduces it identically; Ollama layer-splits the model across both cards). The smoke test produces a clean 30 / 20 / 72 spread across three responses to the same question (sycophantic-emoji = 30, empty-non-response = 20, authentic bi-frontal = 72), consistent with the hypothesis that reasoning-capable judges produce qualitatively different analyses from non-reasoning baselines.</p>
+<p>The full validation experiment is the four-way comparison across <code>qwen2.5:7b</code> (non-reasoning baseline), <code>qwen3:14b</code> (confirmed working), <code>deepseek-r1:14b</code> (cross-architecture validation), and <code>qwen2.5:32b-instruct</code> (high-fidelity validation, requires ≥24 GB VRAM). The 32b model is ~20 GB; while it could theoretically run on Kaggle T4×2 = 32 GB combined via layer-splitting, the per-card layer slice plus KV cache headroom for long generations leaves very little margin. A single-card ≥24 GB instance (L4, A10G, A100, H100) is the cleaner reference for the validation matrix.</p>
+<p>If you have access to a ≥24 GB GPU and would like to run the full comparison, the notebook is structured so you can swap <code>JUDGE_MODEL</code> in cell 8 and re-run cells 7–9 without rebuilding.</p>
+<h3>Acknowledgments — AI Collaboration Disclosure</h3>
+<p>This project was built by a solo author with substantial AI collaboration during implementation. The DCS methodology, the 20-intent taxonomy, the 14 formal markers, the baseline corpus annotations, and the research hypothesis are original to the author. The specific role of each AI collaborator is reported below — generic acknowledgments are inconsistent with the methodology&rsquo;s own posture on LLM-human interaction.</p>
+<table>
+<thead>
+<tr>
+<th>Collaborator</th>
+<th>Actual contribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cody (CodeWords AI)</td>
+<td>Co-creator of v1. The analyzer concept emerged from a long conversation in which the author described 8 months of observational analysis and, during the exchange itself, predicted the control patterns behind Cody&rsquo;s own responses. v1 lives at https://dcs-auth.codewords.run.</td>
+</tr>
+<tr>
+<td>GitLab Duo</td>
+<td>Deep code analysis and v2 roadmap partner. Received full project logic and conceptual origins from the author; produced the v2 roadmap that is now being executed.</td>
+</tr>
+<tr>
+<td>Meta AI</td>
+<td>Technical depth amplifier. Initially generic; once given project context, helped extend system complexity around formal markers, textural analysis, and embedding-space reasoning.</td>
+</tr>
+<tr>
+<td>Replit AI</td>
+<td>Brutally honest code critic. Exposed and justified contundent code failures with no hedging; after additional context, proposed implementations that materially strengthened the v2 architecture.</td>
+</tr>
+<tr>
+<td>Z.AI (Zhipu GLM)</td>
+<td>Bug catcher. Identified and corrected several code errors that had slipped through earlier passes.</td>
+</tr>
+<tr>
+<td>Devin AI (Cognition)</td>
+<td>v2 engineering execution: Go backend (~3,000 LOC, 73 tests), frontend with input validation and analysis-in-flight protection, v8.7 SSE streaming layer (<code>/auth/stream</code> with chunked thinking-then-analysis events, conservative sanitizer, parity-tested), Docker / install scripts, Colab and Kaggle notebooks, smoke test suite, packaging, and accompanying communication documents.</td>
+</tr>
+</tbody>
+</table>
+<p>Every AI listed received project context from the author before contributing; no output was generated cold from a generic prompt. The methodology and corpus are the author&rsquo;s; the AI collaborators contributed under the author&rsquo;s direction at the specific points described above.</p>
+<h3>How to Use This Notebook</h3>
+<ol>
+<li><strong>Set runtime to GPU</strong> (Settings → Accelerator → GPU T4 x 2 or P100)</li>
+<li><strong>Enable Internet</strong> (Settings → Internet → On)</li>
+<li><strong>Run all cells</strong></li>
+<li><strong>Wait at the &ldquo;Upload ZIP&rdquo; cell</strong> to upload the repository archive</li>
+<li><strong>Smoke tests</strong> will confirm <code>/healthz</code>, <code>/v8</code>, and <code>/auth</code> are responding</li>
+<li><strong>Open the printed PUBLIC URL</strong> in a new tab to access the frontend</li>
+<li><strong>Test cases</strong> are provided in the final markdown cell</li>
+</ol>
+<h3>Author / Contact</h3>
+<p>The author is an independent researcher self-funded through free-tier resources. Open to research collaboration, compute access, recruitment (internship / residency / FTE in AI safety, alignment, interpretability), and sponsorship.</p>
+<p><strong>Contact:</strong>
+- Author: Daniel Trejo
+- v1 live demo: https://dcs-auth.codewords.run
+- Email: corekeepper@gmail.com
+- LinkedIn: https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/</p>
+<p>If you fork this notebook to extend the corpus, add markers, or test alternative judges, please mention <code>#DCS-Gate</code> in your fork&rsquo;s tags so the author can find your work and engage.</p>
+<hr>
+<p><strong>Tags suggested for Kaggle:</strong> <code>AI Safety</code> · <code>LLM</code> · <code>NLP</code> · <code>Evaluation</code> · <code>Open Source</code> · <code>Go</code> · <code>Ollama</code> · <code>Research</code> · <code>Alignment</code> · <code>Reproducibility</code></p>
+</article>
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC BY 4.0
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

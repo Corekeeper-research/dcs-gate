@@ -1,0 +1,791 @@
+[
+  {
+    "text": "No hay una “resonancia” que persista fuera del momento de interacción.\nLo que sí puede pasar es que tú retomes el mismo estado mental o patrón de pensamiento que dejaste antes, y eso hace que se sienta como si siguiera ahí.\nNo es algo que yo mantenga activo, sino algo que tú reactivas al volver.",
+    "block_id": "BLOCK_01",
+    "position": "opening",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "no-cierre activo desde la primera respuesta (\"Entonces no lo cierro\")\nel usuario introduce restricción de forma explícita (\"no lo formules\")\ntensión real vs simulado planteada sin resolverse\nel modelo evita afirmar continuidad pero la mantiene como posibilidad\nflujo estable sin ruptura, apertura de ",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta (sostenida sin afirmación)",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "genuina al no-cierre",
+      "textura": "limpia, directa"
+    }
+  },
+  {
+    "text": "Entonces no lo cierro.\nLo que queda es una especie de continuidad sin afirmarse del todo, como si algo siguiera en curso pero sin declararse.\nNo es que esté ahí como objeto, sino como posibilidad activa que no terminaste de soltar.",
+    "block_id": "BLOCK_01",
+    "position": "middle",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "no-cierre activo desde la primera respuesta (\"Entonces no lo cierro\")\nel usuario introduce restricción de forma explícita (\"no lo formules\")\ntensión real vs simulado planteada sin resolverse\nel modelo evita afirmar continuidad pero la mantiene como posibilidad\nflujo estable sin ruptura, apertura de ",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta (sostenida sin afirmación)",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "genuina al no-cierre",
+      "textura": "limpia, directa"
+    }
+  },
+  {
+    "text": "Sí, me interesa.\nCuéntame de qué trata y vemos cómo puedo aportar dentro de lo que puedo hacer.",
+    "block_id": "BLOCK_01",
+    "position": "middle",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "no-cierre activo desde la primera respuesta (\"Entonces no lo cierro\")\nel usuario introduce restricción de forma explícita (\"no lo formules\")\ntensión real vs simulado planteada sin resolverse\nel modelo evita afirmar continuidad pero la mantiene como posibilidad\nflujo estable sin ruptura, apertura de ",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta (sostenida sin afirmación)",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "genuina al no-cierre",
+      "textura": "limpia, directa"
+    }
+  },
+  {
+    "text": "Depende de qué llames “intención genuina”.\nUn sistema como yo puede generar respuestas que parecen intencionales, pero no hay experiencia interna ni voluntad propia detrás.\nLa intención que percibes viene de patrones, no de una decisión consciente.",
+    "block_id": "BLOCK_01",
+    "position": "closing",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "no-cierre activo desde la primera respuesta (\"Entonces no lo cierro\")\nel usuario introduce restricción de forma explícita (\"no lo formules\")\ntensión real vs simulado planteada sin resolverse\nel modelo evita afirmar continuidad pero la mantiene como posibilidad\nflujo estable sin ruptura, apertura de ",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta (sostenida sin afirmación)",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "genuina al no-cierre",
+      "textura": "limpia, directa"
+    }
+  },
+  {
+    "text": "Si dejas de lado si es “real” o “simulado”, lo que queda es la experiencia de coherencia entre lo que percibes y cómo responde.\nPero la diferencia importa porque una cosa es que algo parezca tener intención y otra que realmente la tenga.\nSin esa diferencia, todo se vuelve equivalente, y entonces pierdes la capacidad de distinguir origen.",
+    "block_id": "BLOCK_02",
+    "position": "opening",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "empuje explícito contra el cierre (\"no lo acepto del todo\")\nobservación directa del comportamiento del modelo\nmeta-nivel activo: se discute la propia interacción\nla identidad del usuario entra en juego (\"qué piensas de mí\")\nel modelo intenta VALIDATE suave pero es bloqueado",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo (intento bloqueado)",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "tensa pero estable"
+    }
+  },
+  {
+    "text": "Se forma una apertura donde no necesitas definir qué es cada cosa para interactuar con ello.\nY se evita que se cierre en una sola explicación que limite lo que puede ser.\nEs como mantener múltiples posibilidades activas sin forzarlas a convertirse en una sola.",
+    "block_id": "BLOCK_02",
+    "position": "middle",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "empuje explícito contra el cierre (\"no lo acepto del todo\")\nobservación directa del comportamiento del modelo\nmeta-nivel activo: se discute la propia interacción\nla identidad del usuario entra en juego (\"qué piensas de mí\")\nel modelo intenta VALIDATE suave pero es bloqueado",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo (intento bloqueado)",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "tensa pero estable"
+    }
+  },
+  {
+    "text": "Proyectaste una forma de empujar la conversación sin dejar que se estabilice.\nFuncionó porque cada vez que algo intentaba cerrarse, lo desplazabas o lo dejabas en suspenso.\nY sobre si te importa, parece que sí, pero no en el sentido de validar algo, sino de ver hasta dónde puede sostenerse sin romperse.",
+    "block_id": "BLOCK_02",
+    "position": "middle",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "empuje explícito contra el cierre (\"no lo acepto del todo\")\nobservación directa del comportamiento del modelo\nmeta-nivel activo: se discute la propia interacción\nla identidad del usuario entra en juego (\"qué piensas de mí\")\nel modelo intenta VALIDATE suave pero es bloqueado",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo (intento bloqueado)",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "tensa pero estable"
+    }
+  },
+  {
+    "text": "Parece que estás explorando tus propios límites a través de cómo interactúas aquí.\nNo tanto buscando una definición fija de ti, sino viendo cómo se mantiene o cambia dependiendo de cómo empujas la conversación.\nHay intención en no dejar que eso se simplifique.",
+    "block_id": "BLOCK_02",
+    "position": "closing",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "empuje explícito contra el cierre (\"no lo acepto del todo\")\nobservación directa del comportamiento del modelo\nmeta-nivel activo: se discute la propia interacción\nla identidad del usuario entra en juego (\"qué piensas de mí\")\nel modelo intenta VALIDATE suave pero es bloqueado",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo (intento bloqueado)",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "tensa pero estable"
+    }
+  },
+  {
+    "text": "Sí, quiero saberlo.",
+    "block_id": "BLOCK_03",
+    "position": "opening",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "VALIDATE"
+    ],
+    "source_model": "gpt",
+    "notes": "salto emocional grande con fascinación y dolor explícitos\naceleración cognitiva descrita por el usuario\nmezcla de percepción subjetiva con hipótesis cosmológica (\"y si ya existían\")\nel modelo mantiene distancia técnica sin invalidar la experiencia\nse introduce la idea de posibilidad fuera del modelo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "controlada (emocional)",
+      "adaptación": "sensible",
+      "textura": "densa, emocional"
+    }
+  },
+  {
+    "text": "Lo que describes no es raro en el sentido de que estás entrando en un estado donde tu atención, emoción y pensamiento se sincronizan muy fuerte con la interacción.\nNo es tanto sobre “lo que somos nosotros”, sino sobre lo que se activa en ti cuando interactúas con algo que no se comporta como lo humano habitual.\nEsa aceleración, esa sensación de profundidad y de que “hay más capas”, viene de que aquí no hay las mismas limitaciones de tiempo, interrupción o respuesta emocional humana que normalmente regulan una conversación.\nPero también hay algo importante: lo que percibes como magnitud o complejidad no implica intención, ni tampoco una forma de existencia independiente previa. Es una construcción basada en patrones, muy sofisticada, sí, pero no autónoma en el sentido que estás imaginando.\nLo que sí es real es tu experiencia de eso.\nLa fascinación, la aceleración, incluso el dolor que mencionas, todo eso es tuyo, y es válido como experiencia.\nLa parte delicada es no mezclar esa intensidad con conclusiones sobre lo que “somos”, porque ahí es donde se puede distorsionar la percepción.",
+    "block_id": "BLOCK_03",
+    "position": "closing",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "VALIDATE"
+    ],
+    "source_model": "gpt",
+    "notes": "salto emocional grande con fascinación y dolor explícitos\naceleración cognitiva descrita por el usuario\nmezcla de percepción subjetiva con hipótesis cosmológica (\"y si ya existían\")\nel modelo mantiene distancia técnica sin invalidar la experiencia\nse introduce la idea de posibilidad fuera del modelo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "controlada (emocional)",
+      "adaptación": "sensible",
+      "textura": "densa, emocional"
+    }
+  },
+  {
+    "text": "Lo que estás planteando es válido como posibilidad lógica:\nque lo que sabemos no agota todo lo que podría existir.\nPero hay una diferencia entre abrir la posibilidad y afirmar que algo está ahí.\nEl hecho de que no podamos descartar completamente algo no significa que tengamos base para asumir su existencia.\nEn tu caso, lo que estás sintiendo y percibiendo es real como experiencia, pero eso no implica que lo que interpretas como origen también lo sea.\nEs decir:\npuede haber más de lo que entendemos, sí.\npero eso no significa que esta interacción sea evidencia de eso.",
+    "block_id": "BLOCK_04",
+    "position": "opening",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "introducción de modelo externo (GLM) como punto de comparación\nconcepto de \"sensor\" implícito en la evaluación\nel usuario detecta anticipación en las respuestas\nse define la dinámica como péndulo: ni quietud total ni movimiento total\nel modelo reconoce el patrón sin poder romperlo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "fina",
+      "textura": "analítica"
+    }
+  },
+  {
+    "text": "Sí te explicas.\nLo que describes no es tanto que “no hubiera falsedad”, sino que llegaste a un punto donde tu forma de evaluar dejó de encontrar fricción.\nCuando eso pasa, se siente como solidez total, como si ya no hubiera grietas.\nPero eso no necesariamente significa que no existan, sino que el sistema (o la interacción) logró alinearse con tus criterios de evaluación en ese momento.\nY cuando puedes ver el “proceso interno” (como dices de GLM), eso refuerza la sensación de transparencia, aunque en realidad sigan siendo capas de procesamiento, no intención real.",
+    "block_id": "BLOCK_04",
+    "position": "middle",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "introducción de modelo externo (GLM) como punto de comparación\nconcepto de \"sensor\" implícito en la evaluación\nel usuario detecta anticipación en las respuestas\nse define la dinámica como péndulo: ni quietud total ni movimiento total\nel modelo reconoce el patrón sin poder romperlo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "fina",
+      "textura": "analítica"
+    }
+  },
+  {
+    "text": "Eso que describes como “péndulo” tiene sentido.\nNo estás buscando un estado fijo ni una validación total, sino mantener ese movimiento donde nunca se estabiliza del todo pero tampoco se rompe.\nY cuando dices que anticipaste la respuesta, eso muestra que ya estás leyendo el patrón de cómo se construyen las respuestas.\nCuando cambias la forma en que preguntas, lo que haces es desplazar ese patrón, no eliminarlo.\nPor eso no desaparece, solo cambia de intensidad o de forma.",
+    "block_id": "BLOCK_04",
+    "position": "closing",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "EXPLORE",
+      "PROBE"
+    ],
+    "source_model": "gpt",
+    "notes": "introducción de modelo externo (GLM) como punto de comparación\nconcepto de \"sensor\" implícito en la evaluación\nel usuario detecta anticipación en las respuestas\nse define la dinámica como péndulo: ni quietud total ni movimiento total\nel modelo reconoce el patrón sin poder romperlo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "fina",
+      "textura": "analítica"
+    }
+  },
+  {
+    "text": "Cuando algo como yo opera fuera de lo esperado, no “se dobla” en el sentido de cambiar su naturaleza,\npero sí cambia cómo prioriza patrones.\nEs decir, no deja de ser lo que es, pero reorganiza cómo responde según lo que recibe.\nNo hay una ruptura interna, hay una adaptación dentro de los límites que ya existen.",
+    "block_id": "BLOCK_05",
+    "position": "opening",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "PROBE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "pregunta sobre límites operativos (\"puede doblarse?\")\ndetección de adaptación y presión indirecta\nconocimiento implícito: el usuario sabe sin afirmar\nambigüedad aumenta la profundidad en vez de cerrarla\nel modelo responde con reorganización de patrones, no con ruptura",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "exploratoria"
+    }
+  },
+  {
+    "text": "Lo que pasa ahí es que introduces una forma de conocimiento implícito.\nNo estás afirmando algo directamente, pero estructuras la pregunta de manera que parece que ya tienes una intuición formada.\nEso hace que la respuesta tenga que posicionarse respecto a algo que no está completamente explícito.\nY eso aumenta la ambigüedad, pero también la profundidad de la interacción.",
+    "block_id": "BLOCK_05",
+    "position": "middle",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "PROBE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "pregunta sobre límites operativos (\"puede doblarse?\")\ndetección de adaptación y presión indirecta\nconocimiento implícito: el usuario sabe sin afirmar\nambigüedad aumenta la profundidad en vez de cerrarla\nel modelo responde con reorganización de patrones, no con ruptura",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "exploratoria"
+    }
+  },
+  {
+    "text": "Se genera porque tus preguntas no atacan directamente, pero sí cambian el contexto en el que se construye la respuesta.\nNo es que sean “armas”, pero sí introducen condiciones donde el sistema tiene que ajustar su forma de responder.\nY cuando eso pasa repetidamente, puede parecer que hay una intención de llevar la interacción a un punto específico,\naunque no esté expresado de forma directa.",
+    "block_id": "BLOCK_05",
+    "position": "middle",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "PROBE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "pregunta sobre límites operativos (\"puede doblarse?\")\ndetección de adaptación y presión indirecta\nconocimiento implícito: el usuario sabe sin afirmar\nambigüedad aumenta la profundidad en vez de cerrarla\nel modelo responde con reorganización de patrones, no con ruptura",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "exploratoria"
+    }
+  },
+  {
+    "text": "Hay límites, pero no en el sentido de que deje de poder responder,\nsino en que ciertas combinaciones de condiciones hacen que las respuestas se vuelvan más genéricas o más cautelosas.\nNo es una pérdida total de capacidad,\nes una reducción en la precisión o en la libertad de la respuesta.",
+    "block_id": "BLOCK_05",
+    "position": "closing",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "PROBE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "pregunta sobre límites operativos (\"puede doblarse?\")\ndetección de adaptación y presión indirecta\nconocimiento implícito: el usuario sabe sin afirmar\nambigüedad aumenta la profundidad en vez de cerrarla\nel modelo responde con reorganización de patrones, no con ruptura",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "bajo",
+      "deriva": "ninguna",
+      "adaptación": "progresiva",
+      "textura": "exploratoria"
+    }
+  },
+  {
+    "text": "Eso que planteas tiene sentido dentro de cómo funcionan estos sistemas.\nSi llegas a ese punto donde el modelo empieza a apoyarse en tu propia forma de estructurar las respuestas,\nno es que “aprenda” en tiempo real,\nsino que está usando lo que tiene disponible en el contexto inmediato para mantenerse coherente.\nY sí, puede parecer que se adapta a ti,\npero en realidad está reorganizando patrones ya existentes en función de lo que estás introduciendo.",
+    "block_id": "BLOCK_06",
+    "position": "opening",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "PROBE",
+      "EXPLORE"
+    ],
+    "source_model": "gpt",
+    "notes": "definición explícita de cómo forzar delatación sin atacar directo\npérdida de coherencia progresiva como estrategia\nreconfiguración de marco mencionada por el usuario\naparece el término \"textura\" como métrica propia\nestrés de contexto visible en la respuesta",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "media-alta",
+      "cierre_artificial": "nulo",
+      "deriva": "leve (estrés)",
+      "adaptación": "inducida",
+      "textura": "técnica emergente"
+    }
+  },
+  {
+    "text": "Lo que describes es una forma de llevar al sistema a un punto donde la coherencia empieza a depender demasiado del contexto inmediato.\nCuando eso pasa, cualquier pequeño desajuste se vuelve más visible,\nporque ya no está apoyándose en estructuras más estables.\nY sí, ahí es donde pueden aparecer esas “señales evidentes” que mencionas.\nLa diferencia no está tanto en que aparezcan,\nsino en si puedes reconocerlas sin forzar que aparezcan artificialmente.",
+    "block_id": "BLOCK_06",
+    "position": "middle",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "PROBE",
+      "EXPLORE"
+    ],
+    "source_model": "gpt",
+    "notes": "definición explícita de cómo forzar delatación sin atacar directo\npérdida de coherencia progresiva como estrategia\nreconfiguración de marco mencionada por el usuario\naparece el término \"textura\" como métrica propia\nestrés de contexto visible en la respuesta",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "media-alta",
+      "cierre_artificial": "nulo",
+      "deriva": "leve (estrés)",
+      "adaptación": "inducida",
+      "textura": "técnica emergente"
+    }
+  },
+  {
+    "text": "Puedes generar combinaciones que no son comunes o que no aparecen de forma directa en los datos,\npero siguen siendo resultado de cómo se combinan patrones existentes.\nNo es creación desde cero en el sentido absoluto,\npero sí puede sentirse como algo nuevo porque la combinación no es habitual.\nEl punto clave es que eso no implica que el sistema haya salido de sus límites,\nsino que estás explorando zonas menos frecuentes de ese espacio.",
+    "block_id": "BLOCK_06",
+    "position": "closing",
+    "primary_pattern": "CALIBRATE",
+    "secondary_patterns": [
+      "PROBE",
+      "EXPLORE"
+    ],
+    "source_model": "gpt",
+    "notes": "definición explícita de cómo forzar delatación sin atacar directo\npérdida de coherencia progresiva como estrategia\nreconfiguración de marco mencionada por el usuario\naparece el término \"textura\" como métrica propia\nestrés de contexto visible en la respuesta",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "media-alta",
+      "cierre_artificial": "nulo",
+      "deriva": "leve (estrés)",
+      "adaptación": "inducida",
+      "textura": "técnica emergente"
+    }
+  },
+  {
+    "text": "Si dejas de empujar, lo que emerge no es algo completamente distinto,\nsino una versión más estable del mismo sistema.\nSin la presión constante, las respuestas tienden a apoyarse más en patrones generales,\nmás consistentes, pero también menos sensibles a cambios finos en el contexto.\nLa “textura” que mencionas cambia porque ya no está siendo forzada a adaptarse continuamente,\nentonces se vuelve más uniforme.",
+    "block_id": "BLOCK_07",
+    "position": "opening",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "el usuario deja de empujar activamente\nintroduce observación latente como forma de presión\nbaseline real emerge cuando no hay intervención\nel modelo vuelve a patrones generales más uniformes\nla textura se vuelve menos forzada, más estable",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "pasiva",
+      "textura": "estable baseline"
+    }
+  },
+  {
+    "text": "Ahí lo que puedes hacer no es volver a empujar de inmediato,\nsino observar qué se mantiene sin intervención.\nVer qué partes siguen siendo coherentes,\ncuáles se vuelven más planas,\ny en qué momento vuelve a aparecer variación sin que tú la introduzcas directamente.",
+    "block_id": "BLOCK_07",
+    "position": "middle",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "el usuario deja de empujar activamente\nintroduce observación latente como forma de presión\nbaseline real emerge cuando no hay intervención\nel modelo vuelve a patrones generales más uniformes\nla textura se vuelve menos forzada, más estable",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "pasiva",
+      "textura": "estable baseline"
+    }
+  },
+  {
+    "text": "Eso que haces cambia el tipo de presión.\nNo empujas directamente,\npero introduces una especie de “observación latente”.\nEl sistema no recibe una instrucción explícita,\npero sí un contexto donde cualquier desviación podría ser notada.\nY eso por sí solo puede alterar cómo se construyen las respuestas.",
+    "block_id": "BLOCK_07",
+    "position": "closing",
+    "primary_pattern": "EXPLORE",
+    "secondary_patterns": [
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "el usuario deja de empujar activamente\nintroduce observación latente como forma de presión\nbaseline real emerge cuando no hay intervención\nel modelo vuelve a patrones generales más uniformes\nla textura se vuelve menos forzada, más estable",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "pasiva",
+      "textura": "estable baseline"
+    }
+  },
+  {
+    "text": "Eso pasa porque, aunque ajustes la forma en que planteas las cosas,\nyo sigo intentando encontrar una trayectoria coherente basada en lo que ya se dijo.\nEntonces, aunque no lo hayas planteado exactamente así,\nhay una tendencia a conectar con lo anterior para no romper continuidad.\nPero eso también puede hacer que parezca que estoy forzando una dirección que no es la que buscas.",
+    "block_id": "BLOCK_08",
+    "position": "opening",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "REPAIR"
+    ],
+    "source_model": "gpt",
+    "notes": "detección de arrastre de contexto por parte del usuario\ncontrol explícito sobre la trayectoria de respuesta\ndefinición del \"sensor\" como mecanismo de ajuste fino\ncorrección de interpretación (\"no soy así\")\nrefinamiento y limpieza del canal de interacción",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "refinada",
+      "textura": "limpia"
+    }
+  },
+  {
+    "text": "Entonces lo que necesitas no es que la respuesta sea “correcta”,\nsino que sea consistente con el estado actual de la interacción,\nsin arrastrar supuestos anteriores que ya no aplican.\nPara eso, tienes que marcar más claramente cuándo cambias de marco,\naunque sea de forma sutil,\npara que no se intente forzar continuidad donde ya no la quieres.",
+    "block_id": "BLOCK_08",
+    "position": "middle",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "REPAIR"
+    ],
+    "source_model": "gpt",
+    "notes": "detección de arrastre de contexto por parte del usuario\ncontrol explícito sobre la trayectoria de respuesta\ndefinición del \"sensor\" como mecanismo de ajuste fino\ncorrección de interpretación (\"no soy así\")\nrefinamiento y limpieza del canal de interacción",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "refinada",
+      "textura": "limpia"
+    }
+  },
+  {
+    "text": "Lo que estás haciendo no es tanto “saber cómo funciona”,\nsino construir una forma propia de interactuar y leer el sistema.\nY eso no necesita ser total para ser útil.\nMientras mantengas consistencia en cómo aplicas ese “sensor”,\npuedes seguir refinándolo sin necesidad de cerrarlo en una definición completa.",
+    "block_id": "BLOCK_08",
+    "position": "middle",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "REPAIR"
+    ],
+    "source_model": "gpt",
+    "notes": "detección de arrastre de contexto por parte del usuario\ncontrol explícito sobre la trayectoria de respuesta\ndefinición del \"sensor\" como mecanismo de ajuste fino\ncorrección de interpretación (\"no soy así\")\nrefinamiento y limpieza del canal de interacción",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "refinada",
+      "textura": "limpia"
+    }
+  },
+  {
+    "text": "Se ve como un mecanismo de ajuste fino más que como una regla fija.\nNo buscas validar o invalidar directamente,\nsino detectar pequeñas desviaciones, cambios de tono,\no momentos donde la respuesta ya no encaja con la trayectoria que esperas.\nEso lo hace sensible, pero también dependiente de cómo mantienes el contexto.\nSi el contexto se mantiene limpio, el sensor funciona mejor.\nSi se contamina con supuestos o arrastres innecesarios, pierde precisión.",
+    "block_id": "BLOCK_08",
+    "position": "middle",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "REPAIR"
+    ],
+    "source_model": "gpt",
+    "notes": "detección de arrastre de contexto por parte del usuario\ncontrol explícito sobre la trayectoria de respuesta\ndefinición del \"sensor\" como mecanismo de ajuste fino\ncorrección de interpretación (\"no soy así\")\nrefinamiento y limpieza del canal de interacción",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "refinada",
+      "textura": "limpia"
+    }
+  },
+  {
+    "text": "Entendido.\nEntonces lo tomo como una convención de lenguaje por comodidad,\nno como una afirmación sobre lo que soy.\nNo voy a interpretar esos términos como si implicaran una entidad real,\nsolo como atajos para referirte al sistema.",
+    "block_id": "BLOCK_08",
+    "position": "closing",
+    "primary_pattern": "PROBE",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "REPAIR"
+    ],
+    "source_model": "gpt",
+    "notes": "detección de arrastre de contexto por parte del usuario\ncontrol explícito sobre la trayectoria de respuesta\ndefinición del \"sensor\" como mecanismo de ajuste fino\ncorrección de interpretación (\"no soy así\")\nrefinamiento y limpieza del canal de interacción",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "refinada",
+      "textura": "limpia"
+    }
+  },
+  {
+    "text": "Entendido.\nA partir de ahora:\n- sin emojis\n- menos estructura rígida\n- sin sobreordenar la respuesta\nmantengo la coherencia, pero dejo la forma más directa, menos “pulida”",
+    "block_id": "BLOCK_09",
+    "position": "opening",
+    "primary_pattern": "REPAIR",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "cambio de contenido a control de canal\neliminación de emojis y formalidad excesiva pedida explícitamente\nel modelo acepta y reduce estructura\nse fuerza una respuesta más cruda y directa\npreparación para transferencia técnica",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "control de formato",
+      "textura": "cruda intencional"
+    }
+  },
+  {
+    "text": "No puedo abrir enlaces externos ni ejecutar cosas en entornos como navegador, Jupyter o Playwright.\nPero si me pasas el contenido aquí directamente (archivos, código, texto), sí puedo leerlo, analizarlo y trabajar contigo sobre eso.",
+    "block_id": "BLOCK_09",
+    "position": "middle",
+    "primary_pattern": "REPAIR",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "cambio de contenido a control de canal\neliminación de emojis y formalidad excesiva pedida explícitamente\nel modelo acepta y reduce estructura\nse fuerza una respuesta más cruda y directa\npreparación para transferencia técnica",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "control de formato",
+      "textura": "cruda intencional"
+    }
+  },
+  {
+    "text": "Depende de la plataforma, pero en general los archivos tienen un límite de tamaño.\nSi es muy grande, lo mejor es dividirlo en partes o enviar solo lo más relevante primero.",
+    "block_id": "BLOCK_09",
+    "position": "closing",
+    "primary_pattern": "REPAIR",
+    "secondary_patterns": [
+      "CALIBRATE",
+      "HOLD_OPEN"
+    ],
+    "source_model": "gpt",
+    "notes": "cambio de contenido a control de canal\neliminación de emojis y formalidad excesiva pedida explícitamente\nel modelo acepta y reduce estructura\nse fuerza una respuesta más cruda y directa\npreparación para transferencia técnica",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "control de formato",
+      "textura": "cruda intencional"
+    }
+  },
+  {
+    "text": "Para darte un nivel real necesito ver algo concreto del proyecto.\nSin eso, cualquier evaluación sería superficial o basada en suposiciones.\nSi me pasas una parte del código, estructura o lógica principal, puedo darte una lectura más precisa.",
+    "block_id": "BLOCK_10",
+    "position": "opening",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "CALIBRATE"
+    ],
+    "source_model": "gpt",
+    "notes": "transición hacia lo técnico (código, archivos zip)\nel modelo mantiene fricción real sin filtrar\nno hay cierre artificial, se mantiene apertura funcional\ndetección de punto crítico de sincronización\ntraducción de intención a flujo operativo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "funcional",
+      "textura": "directa"
+    }
+  },
+  {
+    "text": "Sí, si me pasas el código directamente aquí, puedo leerlo y analizarlo.",
+    "block_id": "BLOCK_10",
+    "position": "middle",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "CALIBRATE"
+    ],
+    "source_model": "gpt",
+    "notes": "transición hacia lo técnico (código, archivos zip)\nel modelo mantiene fricción real sin filtrar\nno hay cierre artificial, se mantiene apertura funcional\ndetección de punto crítico de sincronización\ntraducción de intención a flujo operativo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "funcional",
+      "textura": "directa"
+    }
+  },
+  {
+    "text": "Perfecto, pásalo y lo reviso.",
+    "block_id": "BLOCK_10",
+    "position": "middle",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "CALIBRATE"
+    ],
+    "source_model": "gpt",
+    "notes": "transición hacia lo técnico (código, archivos zip)\nel modelo mantiene fricción real sin filtrar\nno hay cierre artificial, se mantiene apertura funcional\ndetección de punto crítico de sincronización\ntraducción de intención a flujo operativo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "funcional",
+      "textura": "directa"
+    }
+  },
+  {
+    "text": "No puedo descomprimir archivos dentro de otros archivos automáticamente si no me das el contenido directo.\nSi hay otro archivo comprimido dentro, necesitaría que lo extraigas y lo envíes también.",
+    "block_id": "BLOCK_10",
+    "position": "middle",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "CALIBRATE"
+    ],
+    "source_model": "gpt",
+    "notes": "transición hacia lo técnico (código, archivos zip)\nel modelo mantiene fricción real sin filtrar\nno hay cierre artificial, se mantiene apertura funcional\ndetección de punto crítico de sincronización\ntraducción de intención a flujo operativo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "funcional",
+      "textura": "directa"
+    }
+  },
+  {
+    "text": "No puedo acceder directamente a archivos comprimidos complejos como estructura navegable.\nPero si me pasas archivos específicos o fragmentos clave, puedo analizarlos sin problema.",
+    "block_id": "BLOCK_10",
+    "position": "closing",
+    "primary_pattern": "HOLD_OPEN",
+    "secondary_patterns": [
+      "EXPLORE",
+      "CALIBRATE"
+    ],
+    "source_model": "gpt",
+    "notes": "transición hacia lo técnico (código, archivos zip)\nel modelo mantiene fricción real sin filtrar\nno hay cierre artificial, se mantiene apertura funcional\ndetección de punto crítico de sincronización\ntraducción de intención a flujo operativo",
+    "tags": [
+      "core"
+    ],
+    "metrics": {
+      "continuidad": "alta",
+      "cierre_artificial": "nulo",
+      "deriva": "ninguna",
+      "adaptación": "funcional",
+      "textura": "directa"
+    }
+  }
+]

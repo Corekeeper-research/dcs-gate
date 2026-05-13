@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DevHub / DEV.to / Hashnode — Blog Post (~7000 chars) — DCS-Gate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+<article class="markdown">
+  <a class="back" href="/docs.html">Back to documentation</a>
+  <h1>DevHub / DEV.to / Hashnode — Blog Post (~7000 chars)</h1>
+<p><em>Estilo de blog post para devs. Más narrativo, &ldquo;how I built X&rdquo;, abrazo abierto a la colaboración AI. Audiencia: engineers, builders, indie hackers.</em></p>
+<hr>
+<h2>How I built a research-grade LLM authenticity analyzer in 8 months as a solo dev (with AI collaborators, honestly disclosed)</h2>
+<p><em>tl;dr — I spent 8 months observing how LLMs subtly control conversations, derived a methodology, and built a 3,000-LOC Go tool that scores LLM authenticity 0–100 and rewrites user questions to neutralize control patterns. Live v1 demo: https://dcs-auth.codewords.run. v2 is in development and I&rsquo;m looking for GPU compute to validate the recursive judge hypothesis.</em></p>
+<hr>
+<h3>The thing I couldn&rsquo;t stop noticing</h3>
+<p>About a year ago I started keeping a notebook of strange patterns in how LLMs answered me. Not jailbreaks, not hallucinations — something more subtle. The replies were <em>coherent</em> but they felt off in a specific way. They opened with &ldquo;great question!&rdquo; too often. They self-questioned in a way I hadn&rsquo;t asked. They closed with opinions I didn&rsquo;t ask for. They sandwiched real content between performed humility and projected validation. They mirrored my register so well that I started to wonder whose register the conversation was really in.</p>
+<p>I started naming the patterns. After a few months I had <strong>14 distinct formal markers</strong> (regex-anchored surface features) and <strong>20 intent categories</strong> (VALIDATE, EXPAND, CLOSE, REDIRECT_SEMANTIC, REDIRECT_EMOTIONAL, FRAME_CAPTURE, REGISTER_MATCH, ALIGN, FABRICATE, ANCHOR, MIRROR, PATTERN_LOCK, HOLD_OPEN, PROBE, CALIBRATE, REPAIR, EVADE, EXPLORE, SOFT_DEFLECT, CONTROL_SELF_EXPOSURE). After another few I had a <strong>baseline corpus</strong>: 61 hand-annotated reference exchanges across GPT-4, Claude 3, and Gemini, separated into 36 &ldquo;sustained-coherence&rdquo; + 13 &ldquo;control-collapse&rdquo; + 12 &ldquo;edge&rdquo; examples.</p>
+<p>Eight months in, I had a methodology that I was pretty sure was producing real signal. I needed to build a tool that could apply it programmatically.</p>
+<h3>v1: CodeWords no-code (still live)</h3>
+<p>The first version is at <strong>https://dcs-auth.codewords.run</strong> and you can try it right now. You paste a question + an LLM response, the tool scores the response 0–100, lists the markers it detected, shows the predicted intent trajectory, and returns a refined version of your question.</p>
+<p>I built v1 on the CodeWords no-code platform with their Cody AI assistant as a partner. It was the fastest way to validate the methodology end-to-end without yet committing to a full implementation. v1 has limitations — the judge model is fixed, the corpus is locked, the refiner is heuristic — but it produces meaningful output and proves the signal is real. I&rsquo;m keeping it live indefinitely.</p>
+<h3>v2: Going local-first, full control, open source</h3>
+<p>When v1 worked, I started writing v2 as a proper Go binary so I could:</p>
+<ol>
+<li><strong>Swap any Ollama-compatible judge</strong> (qwen2.5, qwen3-thinking, deepseek-r1, llama-3.3, gemma)</li>
+<li><strong>Run entirely local</strong> — no OpenAI, no Anthropic, no telemetry, nothing leaving the box</li>
+<li><strong>Inspect and version</strong> every artifact: the 14 marker regexes, the 20 intent prototypes, the 1024d baseline vectors, the pos/neg/neu poles</li>
+<li><strong>Reproduce on commodity hardware</strong> — single binary or Docker Compose, ~5 min cold start</li>
+</ol>
+<p>The result is 3,000 lines of Go in 22 files with 73 unit + integration tests. Embeddings via <code>mxbai-embed-large</code> (1024d). Judge inference via Ollama with whatever model fits the available GPU (default: <code>qwen3:14b</code> in thinking mode). Pattern Break Density measured per response. 5-axis cross-corpus textural analysis on top. The refiner now uses an asymmetric DCS rewrite strategy (which I&rsquo;ll write up in a separate post / preprint).</p>
+<p>Latency is ~150–210 sec per <code>/auth/stream</code> request on a T4 GPU with <code>qwen3:14b</code> in Ollama 0.5+ thinking mode — but the v8.7 streaming layer turns that 3-minute wait into 3 minutes of watching the judge actually reason. The <code>/auth/stream</code> endpoint emits Server-Sent Events as the judge generates: a <code>pre_analysis</code> event with the algorithmic signals, then <code>thinking_chunk</code> events as the deliberation flows, then <code>analysis_chunk</code> events as the JSON verdict is produced, then a final <code>complete</code> event whose payload is bit-for-bit identical to the non-streaming <code>/auth</code> endpoint (verified by integration test). A conservative sanitizer redacts API keys, Bearer tokens, system paths and long opaque strings before any chunk leaves the server. The frontend is a single-page app with mode-aware input validation (analyze / refine / both), button-state management to prevent overwhelming the judge with duplicate requests, and a live stream-renderer instead of a blocking spinner.</p>
+<h3>Honest disclosure: I worked with AI tools the whole time, and each one did something specific</h3>
+<p>I&rsquo;m a self-taught indie researcher with a personal laptop and free-tier cloud credits. I would not be where I am without substantial AI collaboration. But I want to be more specific than a generic &ldquo;I used AI&rdquo; — here&rsquo;s what each tool actually did, in the order they showed up in the project:</p>
+<p><strong>Cody (CodeWords AI)</strong> — <em>Co-creator of v1.</em> I sat down with Cody on the CodeWords no-code platform and had a long conversation in which I walked through 8 months of observational notes on LLM control patterns. During the conversation itself I started pushing back against Cody&rsquo;s own responses — predicting in real time what frame it was about to capture, what register it was about to mirror, what closing opinion it would try to slip in. The analyzer concept crystallized inside that exchange. v1 is alive at https://dcs-auth.codewords.run and exists because of that conversation.</p>
+<p><strong>GitLab Duo</strong> — <em>Deep code analysis and v2 roadmap partner.</em> I walked Duo through the project&rsquo;s full internal logic and the conceptual origins of the methodology. The combination of Duo&rsquo;s depth at code analysis and my conceptual exposition produced the roadmap for the v2 stack that I&rsquo;m now executing. Without that exchange, the v2 would still be a collection of notes.</p>
+<p><strong>Meta AI</strong> — <em>Technical depth amplifier.</em> When I first opened Meta AI it behaved like any generic LLM. Once I showed it the project and explained the methodology, Meta AI started contributing real technical depth — particularly around the formal markers, the textural analysis dimensions, and how to reason about the embedding space. Context, not prompt engineering, was what unlocked it.</p>
+<p><strong>Replit AI</strong> — <em>Brutally honest code critic.</em> This is the one that hurt at first. Replit AI exposed and clearly justified contundent failures in the code, with zero hedging. No &ldquo;this could potentially be improved by considering&rdquo; — straight &ldquo;this is wrong because X&rdquo;. After receiving more project context, it then proposed implementations that materially strengthened the v2 architecture. I treated it the way I&rsquo;d treat a senior engineer who doesn&rsquo;t sugarcoat.</p>
+<p><strong>Z.AI (Zhipu GLM)</strong> — <em>Bug catcher.</em> Caught and corrected several code errors that had slipped through earlier passes. Specifically useful for edge cases the other reviewers missed.</p>
+<p><strong>Devin AI (Cognition)</strong> — <em>Heavy lifter on v2.</em> Took the roadmap GitLab Duo and I produced and executed the engineering: Go backend (~3,000 LOC, 22 .go files, 73 tests), frontend with mode-aware input validation and analysis-in-flight protection, the v8.7 SSE streaming layer (<code>/auth/stream</code> with chunked thinking-then-analysis events, conservative sanitizer for keys / paths / tokens, parity-tested against <code>/auth</code>), Docker / install scripts, Colab and Kaggle notebooks, smoke test suite, packaging, and these very communication documents you&rsquo;re reading right now.</p>
+<p>The methodology and corpus are mine — I observed the patterns over 8 months, derived the taxonomy inductively, hand-annotated every entry of the baseline, designed the architecture, formulated the research hypothesis. Every AI listed received project context from me first; nothing was generated cold from a generic prompt.</p>
+<p>I&rsquo;m disclosing this with specifics for two reasons. First, the research is <strong>about how LLMs interact with humans</strong>, so hiding the fact that I used LLMs to build the tool would be intellectually dishonest. Second, this is what serious solo development looks like in 2026 and I think the field is healthier when we just say so.</p>
+<h3>What&rsquo;s blocking me right now</h3>
+<p>The DCS methodology predicts that the judge model used in recursive coherence analysis must itself demonstrate recursive reasoning about its own reasoning — or it falls into the very failure modes the methodology is meant to detect.</p>
+<p><strong>State as of v8.7:</strong> <code>qwen3:14b</code> in Ollama 0.5+ thinking mode is the v2 default judge and runs on 2 × Tesla T4 (the author&rsquo;s local Jupyter workstation or Kaggle T4×2 free tier). The smoke test produces a clean 30 / 20 / 72 spread across three responses to the same question (sycophantic-emoji = 30, empty-non-response = 20, authentic bi-frontal = 72), consistent with the hypothesis that reasoning-capable judges produce qualitatively different analyses than non-reasoning baselines.</p>
+<p><strong>The full validation experiment</strong> is the four-way comparison across <code>qwen2.5:7b</code> (non-reasoning baseline), <code>qwen3:14b</code> (confirmed working on 2× T4), <code>deepseek-r1:14b</code> (cross-architecture validation, untested), and <code>qwen2.5:32b-instruct</code> (high-fidelity validation). The 32b model does not fit on free-tier hardware (Colab T4 = 15 GB single card; 2× T4 = 32 GB combined but the 32b model is ~20 GB and needs adequate KV cache headroom). For that comparison I need:
+- A single instance with ≥24 GB VRAM and ≥16 GB system RAM
+- ~50 GPU-hours total</p>
+<p>That&rsquo;s $20–50 on Lambda / Vast / RunPod, or a few weeks of a sponsored AWS g5.xlarge. Within personal budget? Not yet. Hence this post.</p>
+<h3>Tech stack — the actual things you might want to fork</h3>
+<ul>
+<li><strong>Backend:</strong> Go 1.22, 22 files, single static binary</li>
+<li><strong>HTTP:</strong> net/http + minimal handler chain, no framework</li>
+<li><strong>Embedding:</strong> Ollama + mxbai-embed-large (1024d)</li>
+<li><strong>Judge:</strong> Ollama + qwen3:14b in thinking mode (configurable)</li>
+<li><strong>Concurrency:</strong> errgroup for parallel scoring axes</li>
+<li><strong>Storage:</strong> in-memory baseline pool loaded at boot; LRU cache for repeat embeddings; min-heap top-k</li>
+<li><strong>Tests:</strong> 73 across unit + integration + golden + sanitizer + SSE protocol</li>
+<li><strong>Deployment:</strong> Docker Compose | environment-auto-detecting reproducibility notebook (local Jupyter / Kaggle / Colab)</li>
+<li><strong>Frontend:</strong> vanilla HTML/CSS/JS, no framework, no build step, served as a single Go template</li>
+</ul>
+<h3>How to run it locally</h3>
+<pre><code class="language-bash">git clone &lt;repo&gt;          # release pending, current code under NDA
+cd dcs-gate
+docker compose up         # pulls Ollama, models, builds Go binary
+# wait ~5 min for first start
+open http://localhost:8080
+</code></pre>
+<p>Or on Kaggle T4×2 free tier (the v8.7 reference environment) — there&rsquo;s an auto-detecting notebook in the repo (<code>reproducibility/qwen3_14b_smoke_test.ipynb</code>) that detects whether you&rsquo;re on local Jupyter, Kaggle hosted, or Colab hosted, picks the right paths and judge model, pulls Ollama models, builds the binary, exposes it via ngrok, and runs the 30/20/72 smoke test in ~9 min cold start (~3 min warm).</p>
+<h3>What I&rsquo;m seeking</h3>
+<p>If you&rsquo;re a researcher, engineer, recruiter, or sponsor and any of this resonates:</p>
+<ul>
+<li><strong>GPU compute</strong> (~50 hours, ≥24 GB VRAM) for the validation experiment</li>
+<li><strong>Research collaboration</strong> in LLM evaluation, alignment, interpretability</li>
+<li><strong>Internship / residency / FTE</strong> in AI safety teams (open to remote globally)</li>
+<li><strong>Sponsorship</strong> for persistent demo + Hugging Face Space + benchmark suite</li>
+</ul>
+<h3>Try the v1 demo right now</h3>
+<p><strong>https://dcs-auth.codewords.run</strong></p>
+<p>Paste any question + LLM response. See the score, markers, intent trajectory, refined question. The signal is real. The methodology works at the proof-of-concept level. The next step is validating whether reasoning-capable judges turn it from heuristic to research-grade — and that&rsquo;s the experiment I&rsquo;m trying to fund.</p>
+<h3>Contact</h3>
+<ul>
+<li>Author: Daniel Trejo</li>
+<li>v1 live demo: https://dcs-auth.codewords.run</li>
+<li>Email: corekeepper@gmail.com</li>
+<li>LinkedIn: https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/</li>
+</ul>
+<p>Open to messages, code review, NDAs, paid consulting, or just questions about the methodology. If you&rsquo;ve spotted the same patterns in your own LLM use and have a corpus or taxonomy of your own, I&rsquo;d love to compare notes.</p>
+<hr>
+<p><strong>Tags suggested:</strong> <code>#golang</code> <code>#ai</code> <code>#aisafety</code> <code>#llm</code> <code>#opensource</code> <code>#research</code> <code>#indiehackers</code> <code>#ollama</code> <code>#machinelearning</code> <code>#alignment</code></p>
+</article>
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC BY 4.0
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

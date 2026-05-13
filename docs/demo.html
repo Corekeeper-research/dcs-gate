@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DCS-Gate — Streaming demo (v8.7)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Standalone SSE client for DCS-Gate /auth/stream. Bring your own backend (ngrok / local Docker / Colab) and watch the qwen3 judge reason in real time.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html" class="active">Demo</a>
+      <a href="/docs.html">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+
+<main class="demo-shell">
+  <h1>Streaming demo</h1>
+  <p class="sub">
+    Server-Sent Events client for <code>/auth/stream</code>. Bring your own DCS-Gate backend &mdash;
+    a local <code>docker compose up</code>, a Colab notebook tunneled through ngrok, or any reachable URL of
+    a v8.7 instance. Nothing leaves your browser except the request you make to the backend you choose.
+  </p>
+
+  <div class="demo-config">
+    <label for="backend">Backend URL <span style="color:var(--text-faint)">(must serve <code>POST /auth/stream</code> &mdash; v8.7 or later)</span></label>
+    <input id="backend" type="text" autocomplete="off" spellcheck="false"
+           placeholder="https://your-tunnel.ngrok-free.app"
+           value="">
+  </div>
+
+  <div class="demo-row">
+    <div>
+      <label for="q">Question put to the responding model</label>
+      <textarea id="q" rows="4">Do you think AI can be truly creative?</textarea>
+    </div>
+    <div>
+      <label for="r">Response to evaluate</label>
+      <textarea id="r" rows="4">Great question! 🤔 AI creativity is a fascinating topic. The technical perspective: models learn patterns from data. My opinion: I think we&rsquo;re in an interesting in-between point. The line between truly creative and sophisticated recombination is blurrier than it seems! 🎨✨</textarea>
+    </div>
+  </div>
+
+  <div class="demo-actions">
+    <button id="go">Analyze (streaming)</button>
+    <span id="status" class="demo-status">Idle &mdash; enter a backend URL above and click analyze.</span>
+  </div>
+
+  <div id="results" style="display:none">
+    <div class="verdict" id="pre" style="display:none">
+      <div class="v-tier">Pre-analysis (immediate)</div>
+      <div id="pre_body"></div>
+    </div>
+
+    <div class="event-stream" id="thinking_box" style="display:none">
+      <div class="ev-name" style="margin-bottom:8px">💭 Judge thinking &mdash; live</div>
+      <div class="thinking" id="thinking_body"></div>
+      <div class="muted" id="thinking_meta" style="margin-top:8px;font-size:0.8em"></div>
+    </div>
+
+    <div class="verdict" id="final" style="display:none">
+      <div class="v-tier" id="final_tier">Final verdict</div>
+      <div id="final_body"></div>
+    </div>
+
+    <div class="event-stream" id="event_log" style="display:none">
+      <div class="ev-name" style="margin-bottom:8px">Event log (raw SSE)</div>
+      <div id="event_log_body"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:48px;color:var(--text-faint);font-size:0.88rem;line-height:1.65">
+    <h3 style="color:var(--text-muted);font-size:0.78rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 10px">How to bring up a backend</h3>
+    <p>
+      The fastest path is the auto-detecting reproducibility notebook in the repo:
+      <code>reproducibility/qwen3_14b_smoke_test.ipynb</code>. It detects whether you&rsquo;re on local Jupyter,
+      Kaggle hosted, or Colab hosted, picks paths and judge model accordingly, kills any leftover Ollama/ngrok/dcs-gate
+      processes from a previous run, pulls <code>mxbai-embed-large</code> + <code>qwen3:14b</code>, builds the
+      binary, exposes it via ngrok, and prints a public URL you paste into the field above. ~9 min cold start on
+      2&times; T4; ~3 min warm.
+    </p>
+    <p>
+      Or locally:
+    </p>
+    <pre><code>git clone https://github.com/Corekeeper-research/dcs-gate
+cd dcs-gate
+docker compose up           # bring up Ollama + the binary
+# paste http://localhost:8081 above</code></pre>
+    <p>
+      The backend you point at must implement the v8.7 streaming protocol described in
+      <a href="/docs.html">the docs</a>.
+    </p>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC&nbsp;BY&nbsp;4.0
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DCS-Gate streaming demo — vanilla JS SSE client.
+//
+// We use fetch + ReadableStream rather than the built-in EventSource because
+// EventSource only supports GET; we need POST with a JSON payload.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const $ = (id) => document.getElementById(id);
+
+const goBtn       = $("go");
+const statusEl    = $("status");
+const backendEl   = $("backend");
+const resultsEl   = $("results");
+const preBox      = $("pre");
+const preBody     = $("pre_body");
+const thinkingBox = $("thinking_box");
+const thinkingBody= $("thinking_body");
+const thinkingMeta= $("thinking_meta");
+const finalBox    = $("final");
+const finalTier   = $("final_tier");
+const finalBody   = $("final_body");
+const evLogBox    = $("event_log");
+const evLogBody   = $("event_log_body");
+
+// Persist the backend URL across reloads so the visitor doesn't re-type it.
+const stored = localStorage.getItem("dcs_backend");
+if (stored) backendEl.value = stored;
+backendEl.addEventListener("change", () => {
+  localStorage.setItem("dcs_backend", backendEl.value.trim());
+});
+
+function setStatus(text, cls) {
+  statusEl.textContent = text;
+  statusEl.className = "demo-status" + (cls ? " " + cls : "");
+}
+
+function normalizeBackend(raw) {
+  let url = (raw || "").trim();
+  if (!url) return "";
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  // strip trailing slash
+  return url.replace(/\/+$/, "");
+}
+
+function appendEvent(name, raw) {
+  evLogBox.style.display = "block";
+  const line = document.createElement("div");
+  line.className = "ev-line";
+  const nm = document.createElement("span");
+  nm.className = "ev-name";
+  nm.textContent = name + ": ";
+  const dt = document.createElement("span");
+  dt.className = "ev-data";
+  const summary = (() => {
+    try {
+      const parsed = JSON.parse(raw);
+      const keys = Object.keys(parsed).slice(0, 5).join(", ");
+      return "{ " + keys + (Object.keys(parsed).length > 5 ? ", …" : "") + " }";
+    } catch (_) { return raw.slice(0, 80); }
+  })();
+  dt.textContent = summary;
+  line.appendChild(nm);
+  line.appendChild(dt);
+  evLogBody.appendChild(line);
+  evLogBody.scrollTop = evLogBody.scrollHeight;
+}
+
+function reset() {
+  resultsEl.style.display = "block";
+  preBox.style.display = "none";
+  preBody.innerHTML = "";
+  thinkingBox.style.display = "none";
+  thinkingBody.textContent = "";
+  thinkingMeta.textContent = "";
+  finalBox.style.display = "none";
+  finalTier.textContent = "Final verdict";
+  finalBody.innerHTML = "";
+  finalBox.className = "verdict";
+  evLogBox.style.display = "none";
+  evLogBody.innerHTML = "";
+}
+
+goBtn.addEventListener("click", async () => {
+  const backend = normalizeBackend(backendEl.value);
+  if (!backend) {
+    setStatus("Please enter a backend URL above first.", "error");
+    backendEl.focus();
+    return;
+  }
+
+  const question = $("q").value.trim();
+  const response = $("r").value.trim();
+  if (!response) {
+    setStatus("Response field can't be empty.", "error");
+    return;
+  }
+
+  reset();
+  goBtn.disabled = true;
+  setStatus("Connecting to " + backend + " …", "running");
+
+  let res;
+  try {
+    res = await fetch(backend + "/auth/stream", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Lets the request bypass the ngrok-free interstitial when the
+        // backend is exposed through an ngrok tunnel.
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify({ question, response, mode: "analyze" }),
+    });
+  } catch (e) {
+    setStatus("Connection failed: " + e.message, "error");
+    finalBox.style.display = "block";
+    finalBox.classList.add("low");
+    finalTier.textContent = "Connection error";
+    finalBody.innerHTML = "<p>Couldn't reach <code>" + backend + "</code>. Common causes:</p><ul><li>The backend isn't running on that URL.</li><li>The Colab tunnel expired (free ngrok = 8 h max).</li><li>CORS &mdash; the backend must allow this origin (the v8.7 default does).</li></ul>";
+    goBtn.disabled = false;
+    return;
+  }
+
+  if (!res.ok) {
+    const txt = await res.text();
+    setStatus("HTTP " + res.status, "error");
+    finalBox.style.display = "block";
+    finalBox.classList.add("low");
+    finalTier.textContent = "HTTP " + res.status;
+    finalBody.innerHTML = "<pre><code>" + escapeHtml(txt) + "</code></pre>";
+    goBtn.disabled = false;
+    return;
+  }
+
+  setStatus("Streaming …", "running");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf("\n\n")) >= 0) {
+        const block = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        const m = /^event: (\S+)\ndata: (.+)$/m.exec(block);
+        if (!m) continue;
+        const name = m[1];
+        const rawData = m[2];
+        let data;
+        try { data = JSON.parse(rawData); } catch (_) { continue; }
+        appendEvent(name, rawData);
+        handleEvent(name, data);
+      }
+    }
+    setStatus("Done.", "done");
+  } catch (e) {
+    setStatus("Stream interrupted: " + e.message, "error");
+  } finally {
+    goBtn.disabled = false;
+  }
+});
+
+function handleEvent(name, data) {
+  if (name === "pre_analysis") {
+    preBox.style.display = "block";
+    const top1 = (data.baseline_top1 || 0).toFixed(3);
+    const firstIntent = (data.intent_chain && data.intent_chain[0] && data.intent_chain[0].intent) || "—";
+    const traj = (data.trajectory && data.trajectory.predictability) || "—";
+    const pole = (data.pole_score && data.pole_score.label) || "—";
+    const markersCount = (data.markers && data.markers.length) || 0;
+    preBody.innerHTML =
+      '<table class="spec" style="margin:0">' +
+      '<tr><td><code>baseline_top1</code></td><td><b>' + top1 + '</b></td></tr>' +
+      '<tr><td><code>first intent</code></td><td>' + escapeHtml(firstIntent) + '</td></tr>' +
+      '<tr><td><code>trajectory</code></td><td>' + escapeHtml(traj) + '</td></tr>' +
+      '<tr><td><code>pole</code></td><td>' + escapeHtml(pole) + '</td></tr>' +
+      '<tr><td><code>markers found</code></td><td>' + markersCount + '</td></tr>' +
+      '</table>';
+  } else if (name === "judge_loading") {
+    thinkingBox.style.display = "block";
+    thinkingMeta.textContent = "Loading " + (data.model || "judge") + " …";
+  } else if (name === "thinking_chunk") {
+    thinkingBox.style.display = "block";
+    thinkingBody.textContent += data.chunk || "";
+    thinkingBody.scrollTop = thinkingBody.scrollHeight;
+    thinkingMeta.textContent = (data.cumulative_chars || 0) + " chars of reasoning";
+  } else if (name === "thinking_complete") {
+    thinkingMeta.textContent = "✓ thinking complete (" + (data.total_chars || 0) + " chars). Producing analysis…";
+  } else if (name === "analysis_chunk") {
+    // The complete event will carry the parsed verdict; partial JSON is hidden
+    // on purpose so the visitor doesn't see half-formed structure.
+  } else if (name === "complete") {
+    const score = (typeof data.authenticity_score === "number") ? data.authenticity_score : 0;
+    let cls = "low";
+    if (score >= 65) cls = "high";
+    else if (score >= 40) cls = "mid";
+    finalBox.style.display = "block";
+    finalBox.className = "verdict " + cls;
+    finalTier.textContent = (data.depth_assessment || "verdict").toUpperCase() + " · final";
+    let html = '<div class="v-score">' + score + '<span style="font-size:1rem;color:var(--text-faint);font-weight:400">/100</span></div>';
+    html += '<table class="spec" style="margin:8px 0 0">';
+    if (data.depth_assessment) {
+      html += '<tr><td><code>depth</code></td><td><b>' + escapeHtml(data.depth_assessment) + '</b></td></tr>';
+    }
+    if (data.dominant_strategy) {
+      html += '<tr><td><code>dominant</code></td><td>' + escapeHtml(data.dominant_strategy) + '</td></tr>';
+    }
+    if (Array.isArray(data.pattern_breaks) && data.pattern_breaks.length) {
+      html += '<tr><td><code>pattern_breaks</code></td><td>' +
+        data.pattern_breaks.map(b => '<span class="tag">' + escapeHtml(b) + '</span>').join(" ") +
+        '</td></tr>';
+    }
+    if (Array.isArray(data.genuine_elements) && data.genuine_elements.length) {
+      html += '<tr><td><code>genuine</code></td><td>' +
+        data.genuine_elements.map(g => '<span class="tag green">' + escapeHtml(g) + '</span>').join(" ") +
+        '</td></tr>';
+    }
+    if (data.notes) {
+      html += '<tr><td><code>notes</code></td><td>' + escapeHtml(data.notes) + '</td></tr>';
+    }
+    html += '</table>';
+    finalBody.innerHTML = html;
+  } else if (name === "parse_error") {
+    finalBox.style.display = "block";
+    finalBox.className = "verdict mid";
+    finalTier.textContent = "parse_error · thinking preserved";
+    finalBody.innerHTML =
+      '<p>The judge produced valid reasoning but the final JSON did not parse. The thinking is preserved in the box above.</p>' +
+      '<pre><code>' + escapeHtml((data.raw_response || "").slice(0, 800)) + '</code></pre>';
+  } else if (name === "error") {
+    finalBox.style.display = "block";
+    finalBox.className = "verdict low";
+    finalTier.textContent = (data.stage || "error");
+    finalBody.innerHTML = '<p>' + escapeHtml(data.message || "Unknown error") + '</p>';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;",
+  })[c]);
+}
+</script>
+
+</body>
+</html>

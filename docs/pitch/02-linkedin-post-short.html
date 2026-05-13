@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LinkedIn — Short Feed Post (~1500 chars) — DCS-Gate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <div class="nav-links">
+      <a href="/">Overview</a>
+      <a href="/demo.html">Demo</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
+      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
+    </div>
+  </div>
+</nav>
+<article class="markdown">
+  <a class="back" href="/docs.html">Back to documentation</a>
+  <h1>LinkedIn — Short Feed Post (~1500 chars)</h1>
+<p><em>Copia desde aquí abajo (sin el título) y pega en LinkedIn como post normal. El preview que verán los recruiters son las primeras 2-3 líneas, por eso son el &ldquo;hook&rdquo;.</em></p>
+<hr>
+<p>I spent 8 months observing how LLMs subtly manage users instead of answering them — projected validation, performed humility, frame capture, register match. I built a tool that detects these patterns and rewrites questions to neutralize them.</p>
+<p>It&rsquo;s called <strong>DCS-Gate</strong> (Dynamic Coherence State Authenticator). A live v1 prototype is at 👉 <strong>https://dcs-auth.codewords.run</strong> — paste any question + LLM response and you&rsquo;ll see a 0–100 authenticity score, the formal markers detected, the predicted intent trajectory, and a refined version of your question.</p>
+<p>The v2 stack is a 3,000-LOC Go binary, 73 tests, triple baseline corpus of 61 hand-annotated vectors, 14 formal markers, 20 intent categories. Local-first, Ollama-only, no external APIs. Since v8.7 the judge&rsquo;s reasoning trace streams to the client over Server-Sent Events — you watch the deliberation as it&rsquo;s produced, you don&rsquo;t wait in silence.</p>
+<p><strong>Honest disclosure of who actually helped:</strong>
+• <strong>Cody (CodeWords AI)</strong> — co-creator of v1 after I pushed back against its own control patterns in a long conversation; v1 wouldn&rsquo;t exist without that exchange.
+• <strong>GitLab Duo</strong> — I walked it through the project&rsquo;s full logic; from that emerged the v2 roadmap.
+• <strong>Meta AI</strong> — generic at first; technical depth amplifier once it had context.
+• <strong>Replit AI</strong> — brutally honest, justified contundent code failures, then strengthened architecture.
+• <strong>Z.AI (Zhipu GLM)</strong> — caught code bugs that slipped through.
+• <strong>Devin AI (Cognition)</strong> — executed the v2: backend (3k LOC, 73 tests, SSE streaming layer with conservative sanitizer), frontend, deployment, notebooks, docs.</p>
+<p>The methodology and corpus are mine. Every AI received project context from me first — nothing was generated cold. This is what solo research looks like in 2026.</p>
+<p><strong>I&rsquo;m looking for:</strong>
+🔬 GPU compute (≥24 GB VRAM, ~50 hours) for the full four-judge comparison (qwen3:14b confirmed on 2× T4; qwen2.5:32b is the one that needs the bigger single card)
+🤝 Research collaboration on LLM evaluation / alignment / interpretability
+💼 Internship, residency, or full-time roles in AI safety
+📢 Sponsors for the open-source release</p>
+<p>If any of this resonates — message me. I&rsquo;ll send the v2 source under NDA if useful.</p>
+<h1>AISafety #LLMEvaluation #AIAlignment #OpenSource #Research #ResearchCollaboration #MachineLearning</h1>
+<hr>
+<p><strong>TIPS PARA POSTEAR:</strong>
+- LinkedIn corta el post a 2-3 líneas + &ldquo;&hellip;ver más&rdquo;. Las 2 primeras líneas (&ldquo;I spent 8 months observing&hellip;&rdquo;) son el hook.
+- Pon la URL de v1 en el cuerpo, no como link card al final (genera más clics).
+- Los emojis 🔬🤝💼📢 ayudan al scan visual sin caer en spammy.
+- Los 7 hashtags al final son los óptimos según el algoritmo (5-9 tags).
+- Postea entre 8-10 AM hora local martes/miércoles/jueves para máximo alcance.</p>
+</article>
+<footer class="site">
+  <div class="container">
+    <div class="col">
+      <h4>DCS-Gate</h4>
+      <ul>
+        <li><a href="/">Overview</a></li>
+        <li><a href="/demo.html">Streaming demo</a></li>
+        <li><a href="/docs.html">Documentation</a></li>
+        <li><a href="https://github.com/Corekeeper-research/dcs-gate">Source</a></li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Author</h4>
+      <ul>
+        <li>Daniel Trejo</li>
+        <li><a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></li>
+        <li><a href="https://www.linkedin.com/in/carlos-daniel-agosto-trejo-35659b327/">LinkedIn</a></li>
+      </ul>
+    </div>
+    <div class="col" style="flex-basis:100%">
+      <div class="legal">
+        © Daniel Trejo &middot; Corekeeper Research &middot; Code: MIT &middot; Methodology and corpus: CC BY 4.0
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
