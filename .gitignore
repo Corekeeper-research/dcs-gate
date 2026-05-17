@@ -1,0 +1,100 @@
+# -----------------------------------------------------------------------------
+# Build artifacts
+# -----------------------------------------------------------------------------
+# Compiled binary (distributed via GitHub Releases, not git)
+# NOTE: patterns are anchored with / so they only match at repo root
+# (otherwise they would also match the work/dcs-gate/ source directory).
+/dcs-gate
+/dcs-gate.bin
+/dcs-gate-v*.bin
+/dcs-gate.exe
+/work/dcs-gate/dcs-gate
+/work/dcs-gate/dcs-gate.bin
+*.test
+
+# Go build cache and module cache (kept out of repo)
+/bin/
+/dist/
+/out/
+
+# -----------------------------------------------------------------------------
+# Go specific
+# -----------------------------------------------------------------------------
+# Test coverage
+*.out
+coverage.txt
+coverage.html
+
+# -----------------------------------------------------------------------------
+# Local environment / secrets
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.local
+
+# Ngrok config and tokens (NEVER commit)
+.ngrok2/
+ngrok.yml
+
+# API keys / tokens / credentials of any kind
+*.key
+*.pem
+credentials.json
+secrets.json
+
+# -----------------------------------------------------------------------------
+# IDE / editor noise
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# -----------------------------------------------------------------------------
+# OS noise
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# Python (for notebooks and helper scripts)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.python-version
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# -----------------------------------------------------------------------------
+# Jupyter / Colab artifacts
+# -----------------------------------------------------------------------------
+*.ipynb_checkpoints
+.colab/
+
+# -----------------------------------------------------------------------------
+# Logs and runtime data
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.pid
+
+# -----------------------------------------------------------------------------
+# Ollama model caches (huge, never commit)
+# -----------------------------------------------------------------------------
+ollama-data/
+.ollama/
+
+# -----------------------------------------------------------------------------
+# Backup files
+# -----------------------------------------------------------------------------
+*.bak
+*.backup
+*.orig
+*.old

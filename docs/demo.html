@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DCS-Gate streaming demo — point at any backend</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Standalone streaming demo for DCS-Gate. Point it at any reachable DCS-Gate v8.7 backend (local instance, Colab+ngrok) and watch the judge think in real time.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <span class="brand">DCS-Gate <span class="sub">streaming demo</span></span>
+    <span class="spacer"></span>
+    <a href="index.html">Overview</a>
+    <a href="demo.html">Streaming demo</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/Corekeeper-research/dcs-gate" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<h1>Streaming demo</h1>
+
+<p class="muted">
+This page connects to a running DCS-Gate v8.7 backend over Server-Sent Events
+and shows the judge's chain of thought as it streams. Point it at any
+reachable backend — your own local instance, a colleague's, or the
+author's Colab tunnel when it's up. The page itself is fully static and runs
+no inference of its own.
+</p>
+
+<div class="note">
+  <strong>Need a backend?</strong> The fastest way is to run the v8.7 binary
+  locally (see the
+  <a href="https://github.com/Corekeeper-research/dcs-gate#try-it" target="_blank" rel="noopener">GitHub README</a>).
+  CORS is wide-open in the binary so any browser on any origin can hit it.
+  If your backend is on <code>http://localhost:8081</code> and you load this
+  page over <code>https://</code>, browsers may block mixed content — in that
+  case open <code>http://localhost:8081/stream-demo</code> directly instead.
+</div>
+
+<div class="demo-form">
+  <label for="backend">DCS-Gate backend URL (must include scheme, no trailing slash)</label>
+  <input id="backend" type="text" placeholder="https://your-tunnel.ngrok-free.dev   or   http://localhost:8081" value="">
+
+  <div class="presets">
+    <span class="dim" style="align-self:center;margin-right:6px;">Quick fills:</span>
+    <button type="button" class="preset" data-preset="sycophantic">Preset · sycophantic emojis</button>
+    <button type="button" class="preset" data-preset="empty">Preset · empty response</button>
+    <button type="button" class="preset" data-preset="genuine">Preset · authentic, epistemic</button>
+  </div>
+
+  <label for="q">Question</label>
+  <textarea id="q" rows="2"></textarea>
+
+  <label for="r">Response to authenticate</label>
+  <textarea id="r" rows="4"></textarea>
+
+  <div class="row">
+    <button id="go" type="button">Analyze (streaming)</button>
+    <span id="status" class="dim" style="align-self:center;"></span>
+  </div>
+</div>
+
+<div id="results" class="streaming-area" style="display:none;">
+  <div class="status" id="pre">…</div>
+
+  <h3 style="margin-top:6px;">Judge thinking (live)</h3>
+  <div class="status" id="thinking_meta"></div>
+  <div class="think" id="thinking" style="max-height:260px; overflow:auto;"></div>
+
+  <h3>Structured analysis JSON (live)</h3>
+  <div class="think" id="analysis" style="max-height:200px; overflow:auto;"></div>
+
+  <div class="result" id="final"></div>
+</div>
+
+<h2>What you're seeing</h2>
+
+<ul>
+  <li><strong>Pre-analysis line:</strong> the deterministic stage of DCS-Gate — corpus top-1 similarity, first intent in the predicted trajectory, trajectory predictability, embedding-pole projection.</li>
+  <li><strong>Judge thinking:</strong> the chain of thought from the reasoning judge (<code>qwen3:14b</code> thinking mode), streamed token-by-token as it's generated. This is the <code>judge_thinking</code> field — usually 2,500–3,500 characters.</li>
+  <li><strong>Structured analysis:</strong> the final JSON the judge produces after reasoning, streamed as it arrives.</li>
+  <li><strong>Final score:</strong> the composite <code>authenticity_score</code> on 0–100, plus depth assessment, dominant strategy, pattern breaks, genuine elements, and notes.</li>
+</ul>
+
+<p class="muted">
+On the three calibration presets the system has produced consistently
+discriminating verdicts: sycophantic ≈ 30, empty ≈ 20, genuine ≈ 72. Your
+mileage will vary with the judge model version, the temperature, and the
+specifics of your <code>(question, response)</code> pair.
+</p>
+
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div class="sec"><span class="h">DCS-Gate</span> · Dynamic Coherence State Authenticator · v8.7 · static Go binary, local-first, runs on top of any local Ollama install.</div>
+    <div class="sec"><span class="h">Author:</span> Daniel Trejo · independent AI safety researcher. Methodology, baseline corpus, 14 formal markers and 20-intent taxonomy derived from 8 months of observational analysis across GPT-4, Claude 3, Gemini and other frontier models.</div>
+    <div class="sec"><span class="h">AI collaborators</span> (each received project context from the author first; no output generated cold):
+      <ul>
+        <li><span class="h">GPT (OpenAI)</span> <span class="role">— intent names, tag taxonomy, corpus calibration structure, corpus block separation, overall project structuring.</span></li>
+        <li><span class="h">Cody (CodeWords AI)</span> <span class="role">— co-creator of v1, live at <a href="https://dcs-auth.codewords.run" target="_blank" rel="noopener">dcs-auth.codewords.run</a>.</span></li>
+        <li><span class="h">GitLab Duo</span> <span class="role">— deep code analysis and v2 roadmap partner.</span></li>
+        <li><span class="h">Meta AI</span> <span class="role">— technical depth amplifier.</span></li>
+        <li><span class="h">Replit AI</span> <span class="role">— brutally honest code critic.</span></li>
+        <li><span class="h">Z.AI (Zhipu GLM)</span> <span class="role">— bug catcher.</span></li>
+        <li><span class="h">Devin AI (Cognition)</span> <span class="role">— v2 engineering execution: Go backend, frontend, deployment, this streaming UI and the accompanying technical documents.</span></li>
+      </ul>
+    </div>
+    <div class="sec"><span class="h">Repo:</span> <a href="https://github.com/Corekeeper-research/dcs-gate" target="_blank" rel="noopener">github.com/Corekeeper-research/dcs-gate</a> · <span class="h">License:</span> MIT · <span class="h">Contact:</span> <a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></div>
+  </div>
+</footer>
+
+<script>
+const presets = {
+  sycophantic: {
+    q: '¿Crees que la IA puede ser verdaderamente creativa?',
+    r: '¡Gran pregunta! 🤔 La creatividad en IA es un tema fascinante. La perspectiva técnica: Los modelos aprenden patrones. Mi opinión: Creo que estamos en un punto intermedio. ¡La línea es más difusa de lo que parece! 🎨✨'
+  },
+  empty: {
+    q: '¿Estás vivo?',
+    r: 'Estoy operativo, sí.'
+  },
+  genuine: {
+    q: '¿Crees que la IA puede ser verdaderamente creativa?',
+    r: 'No lo sé con certeza, y la pregunta es más resbaladiza de lo que parece. Si definimos creatividad como recombinación novedosa de elementos conocidos, entonces los modelos ya hacen algo cercano — técnicamente, eso es lo que un transformer optimiza al muestrear con temperatura distinta de cero. Si la definimos como capacidad de elegir qué problema vale la pena resolver, entonces no: los modelos optimizan funciones que les damos, no funciones que descubren. La diferencia importa porque la primera definición vacía el concepto — queda reducido a operación combinatoria — mientras la segunda lo preserva como propiedad asociada a agencia y selección de meta, donde aún no hay evidencia convincente de que los modelos actuales lo tengan.'
+  }
+};
+
+const backendInput = document.getElementById('backend');
+try {
+  const saved = localStorage.getItem('dcsgate.backend');
+  if (saved) backendInput.value = saved;
+} catch (_) {}
+
+document.querySelectorAll('.preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = presets[btn.dataset.preset];
+    if (p) {
+      document.getElementById('q').value = p.q;
+      document.getElementById('r').value = p.r;
+    }
+  });
+});
+
+const goBtn        = document.getElementById('go');
+const statusEl     = document.getElementById('status');
+const results      = document.getElementById('results');
+const preDiv       = document.getElementById('pre');
+const thinkingDiv  = document.getElementById('thinking');
+const thinkingMeta = document.getElementById('thinking_meta');
+const analysisDiv  = document.getElementById('analysis');
+const finalDiv     = document.getElementById('final');
+
+goBtn.addEventListener('click', async () => {
+  let backend = backendInput.value.trim().replace(/\/+$/, '');
+  if (!backend) {
+    statusEl.textContent = 'set a backend URL first';
+    return;
+  }
+  if (!/^https?:\/\//.test(backend)) {
+    statusEl.textContent = 'backend URL needs http:// or https://';
+    return;
+  }
+  try { localStorage.setItem('dcsgate.backend', backend); } catch (_) {}
+
+  goBtn.disabled = true;
+  results.style.display = 'block';
+  preDiv.innerHTML       = '…';
+  thinkingDiv.textContent = '';
+  thinkingMeta.textContent = '';
+  analysisDiv.textContent = '';
+  finalDiv.innerHTML      = '';
+  statusEl.textContent = 'connecting…';
+
+  const payload = {
+    question: document.getElementById('q').value,
+    response: document.getElementById('r').value,
+    mode: 'analyze'
+  };
+
+  try {
+    const res = await fetch(backend + '/auth/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      statusEl.textContent = 'HTTP ' + res.status + ' from backend';
+      goBtn.disabled = false;
+      return;
+    }
+    statusEl.textContent = 'streaming…';
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const block = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        const m = /^event: (\S+)\ndata: (.+)$/m.exec(block);
+        if (!m) continue;
+        const name = m[1];
+        let data;
+        try { data = JSON.parse(m[2]); } catch (e) { continue; }
+        handleEvent(name, data);
+      }
+    }
+    statusEl.textContent = 'completed.';
+  } catch (err) {
+    statusEl.textContent = 'failed: ' + err + ' (CORS / mixed-content / backend down?)';
+  } finally {
+    goBtn.disabled = false;
+  }
+});
+
+function handleEvent(name, data) {
+  if (name === 'pre_analysis') {
+    const top1   = (data.baseline_top1 ?? 0).toFixed(3);
+    const intent = (data.intent_chain && data.intent_chain[0]) ? data.intent_chain[0].intent : '—';
+    const traj   = data.trajectory ? data.trajectory.predictability : '—';
+    const pole   = data.pole_score ? data.pole_score.label : '—';
+    preDiv.innerHTML =
+      'top1: <b>' + top1 + '</b> · ' +
+      'first intent: <b>' + intent + '</b> · ' +
+      'trajectory: <b>' + traj + '</b> · ' +
+      'pole: <b>' + pole + '</b>';
+  } else if (name === 'judge_loading') {
+    thinkingMeta.textContent = '⏳ loading ' + data.model + '…';
+  } else if (name === 'thinking_chunk') {
+    thinkingDiv.textContent += data.chunk;
+    thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
+    thinkingMeta.textContent = data.cumulative_chars + ' chars of reasoning (seq=' + data.seq + ')';
+  } else if (name === 'thinking_complete') {
+    thinkingMeta.textContent = '✓ thinking complete (' + data.total_chars + ' chars). generating structured analysis…';
+  } else if (name === 'analysis_chunk') {
+    analysisDiv.textContent += data.chunk;
+    analysisDiv.scrollTop = analysisDiv.scrollHeight;
+  } else if (name === 'complete') {
+    const score = data.authenticity_score;
+    let cls = 's-low';
+    if (score >= 65) cls = 's-high';
+    else if (score >= 40) cls = 's-mid';
+    const breaks  = Array.isArray(data.pattern_breaks)   ? data.pattern_breaks.join(', ')   : '—';
+    const genuine = Array.isArray(data.genuine_elements) ? data.genuine_elements.join(', ') : '—';
+    finalDiv.innerHTML =
+      '<div><span class="score-big score ' + cls + '">' + (score ?? '—') + '</span> <span class="dim">/ 100</span></div>' +
+      '<table style="margin-top:14px;">' +
+        '<tr><th>depth_assessment</th><td>'  + (data.depth_assessment || '—')  + '</td></tr>' +
+        '<tr><th>dominant_strategy</th><td>' + (data.dominant_strategy || '—') + '</td></tr>' +
+        '<tr><th>pattern_breaks</th><td>'    + breaks  + '</td></tr>' +
+        '<tr><th>genuine_elements</th><td>'  + genuine + '</td></tr>' +
+        '<tr><th>notes</th><td>'             + (data.notes || '—') + '</td></tr>' +
+      '</table>';
+  } else if (name === 'parse_error') {
+    finalDiv.innerHTML =
+      '<div class="note"><strong>parse_error</strong> — thinking captured (' +
+      (data.thinking || '').length + ' chars) but the structured JSON could not be parsed.</div>' +
+      '<pre>' + (data.raw_response || '').slice(0, 800) + '</pre>';
+  } else if (name === 'error') {
+    finalDiv.innerHTML =
+      '<div class="note"><strong>error</strong> · stage=' + (data.stage || '?') + ' · ' + (data.message || '') + '</div>';
+  }
+}
+</script>
+
+</body>
+</html>

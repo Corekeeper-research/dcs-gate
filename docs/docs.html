@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DCS-Gate — Documentation index</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Index of all DCS-Gate technical writeups, communication versions, and methodology documents.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <span class="brand">DCS-Gate <span class="sub">docs</span></span>
+    <span class="spacer"></span>
+    <a href="index.html">Overview</a>
+    <a href="demo.html">Streaming demo</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/Corekeeper-research/dcs-gate" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<h1>Documentation index</h1>
+
+<p class="muted">
+All technical writeups, methodology documents, and communication versions
+are version-controlled in the GitHub repo. Markdown renders natively on
+GitHub with syntax highlighting and a clickable TOC — that's the recommended
+read.
+</p>
+
+<h2>Technical papers</h2>
+
+<p class="muted">
+Four documents capturing the mathematics, design rationale, and adjacent
+research lines. Read in any order; cross-references are explicit.
+</p>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h3>Mathematics of DCS-Gate</h3>
+    <p class="muted">
+      Formalization of every metric: similarity, pole scoring, predictability,
+      pattern-break density, cross-corpus, and the composite score function.
+      ~280 lines of LaTeX-style math in markdown.
+    </p>
+    <p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/blob/main/papers/MATEMATICAS_DCS_GATE.md" target="_blank" rel="noopener">papers/MATEMATICAS_DCS_GATE.md →</a></p>
+  </div>
+
+  <div class="card">
+    <h3>v8.7 streaming design</h3>
+    <p class="muted">
+      Full event schema (7 SSE events: pre_analysis → judge_loading →
+      thinking_chunk × N → thinking_complete → analysis_chunk × M → complete),
+      security filter rationale (regex-based redaction), edge cases, demo HTML
+      structure, and 8-step implementation roadmap.
+    </p>
+    <p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/blob/main/papers/DISENO_v87_STREAMING.md" target="_blank" rel="noopener">papers/DISENO_v87_STREAMING.md →</a></p>
+  </div>
+
+  <div class="card">
+    <h3>Coherence-Loss Regularizer + Latency-of-Resolution probes</h3>
+    <p class="muted">
+      Companion empirical probes. CLR penalizes models for inconsistent
+      coherence states across paraphrased prompts; LOR measures how long it
+      takes a model to fully resolve a multi-part question. Together they
+      target the open question of whether DCS scores correlate with broader
+      alignment behavior.
+    </p>
+    <p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/blob/main/papers/ANALISIS_CLR_LOR.md" target="_blank" rel="noopener">papers/ANALISIS_CLR_LOR.md →</a></p>
+  </div>
+
+  <div class="card">
+    <h3>Phantom Council — multi-agent recursive coherence</h3>
+    <p class="muted">
+      An adjacent line of research on multi-agent recursive coherence. Separate
+      codebase, distinct conceptual scope. Included here because reviewers
+      sometimes ask about my broader research direction.
+    </p>
+    <p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/blob/main/papers/ANALISIS_PHANTOM_COUNCIL.md" target="_blank" rel="noopener">papers/ANALISIS_PHANTOM_COUNCIL.md →</a></p>
+  </div>
+</div>
+
+<h2>Communication versions</h2>
+
+<p class="muted">
+The same research has been adapted into different formats for different
+audiences. All are in <code>pitch/</code> in the repo.
+</p>
+
+<ul>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/01-master-research-overview.md" target="_blank" rel="noopener"><code>01-master-research-overview.md</code></a> — full research overview, the canonical pitch document.</li>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/02-linkedin-post-short.md" target="_blank" rel="noopener"><code>02-linkedin-post-short.md</code></a> — short LinkedIn post version (&lt;2000 chars).</li>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/03-linkedin-article-long.md" target="_blank" rel="noopener"><code>03-linkedin-article-long.md</code></a> — long-form LinkedIn article.</li>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/04-kaggle-notebook-description.md" target="_blank" rel="noopener"><code>04-kaggle-notebook-description.md</code></a> — for the reproducibility notebook on Kaggle.</li>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/05-devhub-blog-post.md" target="_blank" rel="noopener"><code>05-devhub-blog-post.md</code></a> — dev blog version.</li>
+  <li><a href="https://github.com/Corekeeper-research/dcs-gate/blob/main/pitch/06-ai-safety-forums.md" target="_blank" rel="noopener"><code>06-ai-safety-forums.md</code></a> — for AI safety forums (LessWrong, AI Alignment Forum).</li>
+</ul>
+
+<h2>Code</h2>
+
+<p class="muted">
+The full v8.7 Go implementation lives in <code>work/dcs-gate/</code>. The
+entry point is <code>main.go</code> (routing) and the most interesting
+files are <code>judge.go</code> (judge prompting + parsing),
+<code>analyzer.go</code> (deterministic stage), <code>baseline.go</code>
+(corpus + similarity), <code>stream_demo.go</code> (streaming endpoint
+embedded HTML), and <code>filter.go</code> (security-redaction filters
+applied to streamed content). ~3,000 lines of Go, 51 tests passing.
+</p>
+
+<p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/tree/main/work/dcs-gate" target="_blank" rel="noopener">work/dcs-gate/ →</a></p>
+
+<h2>Reproducibility</h2>
+
+<p class="muted">
+The 20 / 30 / 72 smoke tests were run on a Google Colab T4 (free tier).
+The notebook does the full setup — install Ollama, pull
+<code>mxbai-embed-large</code> and <code>qwen3:14b</code>, download the
+v8.7 binary, run health check, run the three contrastive tests, capture
+all outputs — in one pass. All output cells are preserved in the
+committed version so you can audit the runs even before reproducing.
+</p>
+
+<p><a class="btn" href="https://github.com/Corekeeper-research/dcs-gate/blob/main/reproducibility/smoke_tests.ipynb" target="_blank" rel="noopener">reproducibility/smoke_tests.ipynb →</a></p>
+
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div class="sec"><span class="h">DCS-Gate</span> · Dynamic Coherence State Authenticator · v8.7 · static Go binary, local-first, runs on top of any local Ollama install.</div>
+    <div class="sec"><span class="h">Repo:</span> <a href="https://github.com/Corekeeper-research/dcs-gate" target="_blank" rel="noopener">github.com/Corekeeper-research/dcs-gate</a> · <span class="h">License:</span> MIT · <span class="h">Contact:</span> <a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
