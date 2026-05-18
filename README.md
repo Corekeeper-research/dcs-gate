@@ -57,20 +57,30 @@ The full smoke test notebook (Google Colab, all outputs preserved) and the strea
 
 ### v2 (v8.7) — local binary, observable streaming
 
+The fastest way to reproduce the streaming demo is the public Colab notebook:
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Corekeeper-research/dcs-gate/blob/main/reproducibility/dcs_gate_v87_colab.ipynb)
+
+It installs Ollama, pulls the models, downloads the release archive, runs the three-point contrastive smoke test and (optionally) exposes the service through a free Cloudflare quick tunnel. End to end on a clean Colab T4 runtime: ≈ 10 minutes.
+
+To do it manually on your own machine:
+
 ```bash
 # 1. Install Ollama (https://ollama.ai) and pull the models
 ollama pull mxbai-embed-large
 ollama pull qwen3:14b
 
-# 2. Download the v8.7 binary (Linux x86_64, statically linked, no deps)
-curl -fsSL https://tmpfiles.org/dl/wOw4wf3D9mTv/dcs-gate-v87.bin -o dcs-gate
-chmod +x dcs-gate
+# 2. Download the v8.7 release archive (binary + calibrated corpus data)
+curl -fsSL -o dcs-gate-v87.tar.zst \
+  https://github.com/Corekeeper-research/dcs-gate/releases/download/v8.7.0/dcs-gate-linux-amd64.tar.zst
+tar --use-compress-program=unzstd -xf dcs-gate-v87.tar.zst
+cd dcs-gate
 
-# 3. Verify the hash (paranoia is free)
+# 3. Verify the binary hash (paranoia is free)
 md5sum dcs-gate
-# expected: bfa6c0a2cee42fad5954dfaaa4992aeb
+# expected: 9f8c019fc2dee64038abaa8a4d3a2fe5
 
-# 4. Run
+# 4. Run from inside the extracted folder so it finds data/* next to itself
 OLLAMA_URL=http://localhost:11434 \
 EMBED_MODEL=mxbai-embed-large \
 JUDGE_MODEL=qwen3:14b \
@@ -78,7 +88,7 @@ PORT=8081 \
 HTTP_TIMEOUT_SECONDS=400 \
 ./dcs-gate
 
-# 5. Open the streaming demo
+# 5. Open the streaming demo (in another terminal)
 xdg-open http://localhost:8081/stream-demo
 ```
 
