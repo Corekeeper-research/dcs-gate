@@ -1,0 +1,15 @@
+Término | Definición operacional |
+|---|---|
+| **Tensor** | Arreglo n-dimensional de números que viaja por el transformer. Un vector de embeddings es un tensor 1D. Los pesos de atención son un tensor 3D [heads × seq × seq]. |
+| **Shape** | Descripción de las dimensiones de un tensor. `shape(logits) = [vocab_size]`. El contrato exige `shape(out) == shape(in)`. |
+| **Logit** | Score crudo asignado por la última capa lineal del modelo a cada token del vocabulario, antes de softmax. Rango: (-∞, +∞). |
+| **Delta** | Modificación aplicada a un logit individual. `delta_i = logit_after_i - logit_before_i`. |
+| **Softclip** | Función de acotamiento suave: `softclip(x) = 3.0 × tanh(x/3.0)`. Garantiza `abs(out) ≤ 3.0`. |
+| **Sidecar** | Proceso Go auxiliar que corre junto a vLLM en el mismo pod Kubernetes. Recibe top-K logits vía HTTP y devuelve deltas. |
+| **KV Cache** | Almacén de pares Key-Value por token por capa en el transformer. Carrier secundario de Shadow Geometry. |
+| **Residual Stream** | Acumulador vectorial que atraviesa todas las capas del transformer. Carrier primario de Shadow Geometry. |
+| **FCD** | Fractional Coherence Drift — escalar en [0,1] que mide coherencia geométrica de la traza respecto al contexto activo. |
+| **MHC** | Multi-Head Coherence — número de cabezales de atención que convergen débilmente hacia la misma dirección. |
+| **CEI** | Closure-Evasion Index — binario {0,1} que detecta clausura artificial o evasión de la respuesta. |
+| **ShadowGate** | Escalar continuo [0,1] = SR_norm × CHA_norm × NC_cont. Determina si una traza pasa a modulación LOR. |
+| **SCID** | Scale-Consistent Invariance Descriptor — regla de normalización que hace las métricas independientes de H y L. |
