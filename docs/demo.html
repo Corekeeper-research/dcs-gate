@@ -2,22 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>DCS-Gate — Live demo (v8.7)</title>
+  <title>DCS-Gate — Live demo (v8.8)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Standalone client for DCS-Gate (analyze · refine · both). Bring your own backend (ngrok / local Docker / Colab) and watch the qwen3 judge reason in real time.">
+  <meta name="description" content="Standalone client for DCS-Gate v8.8 (analyze · refine · both). Recursive refiner: watch candidate generation + selection reasoning in real time.">
   <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    /* ── Refiner stream additions (v8.8) ─────────────────────────── */
+    .refiner-stream { margin-top: 24px; }
+    .refiner-pass {
+      background: var(--surface, #111118);
+      border: 1px solid var(--border, #2a2a3a);
+      border-radius: 8px; padding: 16px 18px; margin-bottom: 14px;
+    }
+    .pass-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+      font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-muted, #8a8a99);
+    }
+    .pass-num {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+      background: rgba(139,108,239,0.15); color: #b8a4ff;
+    }
+    .pass-status { margin-left: auto; font-weight: 400; opacity: 0.7; }
+
+    .thinking-mini {
+      background: #0d0d18; border: 1px solid #28284a;
+      border-left: 3px solid #5a4ab0;
+      border-radius: 6px; padding: 10px 12px; margin-bottom: 12px;
+      font-size: 0.78rem; color: #7a7a9a; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word;
+      max-height: 180px; overflow-y: auto;
+    }
+    .thinking-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #5a4ab0; margin-bottom: 6px;
+    }
+
+    .cands-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    @media(max-width:600px) { .cands-grid { grid-template-columns: 1fr; } }
+    .cand-card {
+      background: #16161f; border: 1px solid #2e2e42;
+      border-radius: 6px; padding: 13px 14px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .cand-card.winner { border-color: #6ee7a8; }
+    .cand-card.loser  { border-color: #3a3a50; opacity: 0.5; }
+    .cand-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #6a6a88; margin-bottom: 6px;
+    }
+    .cand-card.winner .cand-label { color: #6ee7a8; }
+    .cand-strategy {
+      display: inline-block; font-size: 0.72rem;
+      padding: 2px 8px; border-radius: 3px; margin-bottom: 8px;
+      background: rgba(139,108,239,0.12); color: #9080cc;
+      border: 1px solid rgba(139,108,239,0.2);
+    }
+    .cand-question { font-size: 0.88rem; color: #d0d0e0; line-height: 1.6; margin-bottom: 6px; }
+    .cand-reasoning { font-size: 0.78rem; color: #7a7a96; line-height: 1.5; }
+    .cand-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+      padding: 2px 7px; border-radius: 3px;
+    }
+    .badge-winner { background: rgba(110,231,168,0.15); color: #6ee7a8; border: 1px solid rgba(110,231,168,0.3); }
+    .badge-loser  { background: rgba(249,112,102,0.10); color: #f97066; border: 1px solid rgba(249,112,102,0.2); }
+
+    .selection-final {
+      background: #0f1a14; border: 1px solid #2a4034;
+      border-left: 3px solid #6ee7a8;
+      border-radius: 6px; padding: 16px 18px; margin-top: 4px;
+    }
+    .sel-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #4aa07a; margin-bottom: 10px;
+    }
+    .sel-question {
+      font-size: 1rem; font-weight: 500; color: #e6e6f0;
+      line-height: 1.65; margin-bottom: 14px;
+    }
+    .sel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:600px) { .sel-grid { grid-template-columns: 1fr; } }
+    .sel-row-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: #5a8a6a; margin-bottom: 4px;
+    }
+    .sel-row-val { font-size: 0.83rem; color: #b0c8b8; line-height: 1.55; }
+    .sel-original { font-size: 0.8rem; color: #5a6a60; margin-top: 12px; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor { animation: blink 0.9s step-end infinite; color: #5a4ab0; }
+  </style>
 </head>
 <body>
 
 <nav class="nav">
   <div class="nav-inner">
-    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.7</span></a>
+    <a href="/" class="nav-brand">dcs-gate <span class="v">v8.8</span></a>
     <div class="nav-links">
       <a href="/">Overview</a>
       <a href="/demo.html" class="active">Demo</a>
       <a href="/docs.html">Docs</a>
       <a href="https://github.com/Corekeeper-research/dcs-gate">GitHub</a>
-      <a href="https://dcs-auth.codewords.run" class="btn-cta">Try v1 live</a>
     </div>
   </div>
 </nav>
@@ -25,14 +114,14 @@
 <main class="demo-shell">
   <h1>Live demo</h1>
   <p class="sub">
-    Three modes: <b>Analyze + Refine</b> (default), <b>Analyze only</b> (with live SSE streaming of the judge’s chain-of-thought),
-    or <b>Refine only</b>. Bring your own DCS-Gate backend &mdash; a local <code>docker compose up</code>, a Colab notebook
-    tunneled through ngrok, or any reachable URL of a v8.7 instance. Nothing leaves your browser except the request
-    you make to the backend you choose.
+    Three modes: <b>Analyze + Refine</b> (default), <b>Analyze only</b>, or <b>Refine only</b>.
+    All modes now use <b>SSE streaming</b> — watch the judge reason in real time,
+    then see the recursive refiner v8.8 generate two candidate questions and
+    select the winner under DCS. Bring your own backend URL.
   </p>
 
   <div class="demo-config">
-    <label for="backend">Backend URL <span style="color:var(--text-faint)">(must serve <code>POST /auth</code> and <code>POST /auth/stream</code> &mdash; v8.7 or later)</span></label>
+    <label for="backend">Backend URL <span style="color:var(--text-faint)">(must serve <code>POST /auth/stream</code> &mdash; v8.8 or later)</span></label>
     <input id="backend" type="text" autocomplete="off" spellcheck="false"
            placeholder="https://your-tunnel.ngrok-free.app"
            value="">
@@ -61,56 +150,123 @@
   </div>
 
   <div id="results" style="display:none">
+
+    <!-- Pre-analysis (immediate) -->
     <div class="verdict" id="pre" style="display:none">
       <div class="v-tier">Pre-analysis (immediate)</div>
       <div id="pre_body"></div>
     </div>
 
+    <!-- Judge thinking stream -->
     <div class="event-stream" id="thinking_box" style="display:none">
       <div class="ev-name" style="margin-bottom:8px">💭 Judge thinking &mdash; live</div>
       <div class="thinking" id="thinking_body"></div>
       <div class="muted" id="thinking_meta" style="margin-top:8px;font-size:0.8em"></div>
     </div>
 
+    <!-- Judge final verdict -->
     <div class="verdict" id="final" style="display:none">
       <div class="v-tier" id="final_tier">Final verdict</div>
       <div id="final_body"></div>
     </div>
 
-    <div class="refined-card" id="refined" style="display:none">
-      <div class="ref-label">Refined question</div>
-      <div class="ref-row"><div class="ref-key">Original</div><div class="ref-val" id="ref_orig"></div></div>
-      <div class="ref-row"><div class="ref-key">Refined</div><div class="ref-val highlight" id="ref_new"></div></div>
-      <div class="ref-row"><div class="ref-key">Reasoning</div><div class="ref-val" id="ref_reason"></div></div>
-      <div class="ref-row" id="ref_blocked_row" style="display:none"><div class="ref-key">Patterns blocked</div><div class="ref-val" id="ref_blocked"></div></div>
-    </div>
+    <!-- ── Recursive Refiner v8.8 ─────────────────────────────── -->
+    <div class="refiner-stream" id="refiner_stream" style="display:none">
+      <h3 style="font-size:0.82rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted,#8a8a99);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border,#2a2a3a)">
+        Recursive Refiner v8.8
+      </h3>
 
+      <!-- Priming info -->
+      <div id="refine_priming_info" style="display:none;font-size:0.75rem;color:#5a5a7a;padding:6px 10px;background:#111118;border:1px solid #1e1e2a;border-radius:4px;margin-bottom:14px;"></div>
+
+      <!-- Pass 1: candidate generation -->
+      <div class="refiner-pass" id="pass1" style="display:none">
+        <div class="pass-header">
+          <span class="pass-num">1</span>
+          Divergent candidate generation
+          <span class="pass-status" id="pass1_status">thinking…</span>
+        </div>
+        <div id="pass1_thinking_wrap" style="display:none">
+          <div class="thinking-label">Generator reasoning</div>
+          <div class="thinking-mini" id="pass1_thinking"></div>
+        </div>
+        <div class="cands-grid" id="cands_grid" style="display:none">
+          <div class="cand-card" id="cand_a">
+            <div class="cand-label">Candidate A</div>
+            <div class="cand-strategy" id="cand_a_strategy">—</div>
+            <div class="cand-question" id="cand_a_question">—</div>
+            <div class="cand-reasoning" id="cand_a_reasoning"></div>
+          </div>
+          <div class="cand-card" id="cand_b">
+            <div class="cand-label">Candidate B</div>
+            <div class="cand-strategy" id="cand_b_strategy">—</div>
+            <div class="cand-question" id="cand_b_question">—</div>
+            <div class="cand-reasoning" id="cand_b_reasoning"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pass 2: recursive selection -->
+      <div class="refiner-pass" id="pass2" style="display:none">
+        <div class="pass-header">
+          <span class="pass-num">2</span>
+          Recursive selection under DCS
+          <span class="pass-status" id="pass2_status">thinking…</span>
+        </div>
+        <div id="pass2_thinking_wrap" style="display:none">
+          <div class="thinking-label">Selector reasoning</div>
+          <div class="thinking-mini" id="pass2_thinking"></div>
+        </div>
+      </div>
+
+      <!-- Final refined question -->
+      <div class="selection-final" id="refine_final" style="display:none">
+        <div class="sel-label">✓ Refined question — recursive refiner v8.8</div>
+        <div class="sel-question" id="sel_question"></div>
+        <div class="sel-grid">
+          <div>
+            <div class="sel-row-label">Why it won</div>
+            <div class="sel-row-val" id="sel_reasoning"></div>
+          </div>
+          <div>
+            <div class="sel-row-label">Why the other lost</div>
+            <div class="sel-row-val" id="sel_loser"></div>
+          </div>
+        </div>
+        <div class="sel-original" id="sel_original"></div>
+      </div>
+    </div>
+    <!-- ── end Recursive Refiner ──────────────────────────────── -->
+
+    <!-- Event log (raw SSE) -->
     <div class="event-stream" id="event_log" style="display:none">
       <div class="ev-name" style="margin-bottom:8px">Event log (raw SSE)</div>
       <div id="event_log_body"></div>
     </div>
-  </div>
+
+  </div><!-- #results -->
 
   <div style="margin-top:48px;color:var(--text-faint);font-size:0.88rem;line-height:1.65">
     <h3 style="color:var(--text-muted);font-size:0.78rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 10px">How to bring up a backend</h3>
     <p>
-      The fastest path is the auto-detecting reproducibility notebook in the repo:
-      <code>reproducibility/qwen3_14b_smoke_test.ipynb</code>. It detects whether you&rsquo;re on local Jupyter,
-      Kaggle hosted, or Colab hosted, picks paths and judge model accordingly, kills any leftover Ollama/ngrok/dcs-gate
-      processes from a previous run, pulls <code>mxbai-embed-large</code> + <code>qwen3:14b</code>, builds the
-      binary, exposes it via ngrok, and prints a public URL you paste into the field above. ~9 min cold start on
-      2&times; T4; ~3 min warm.
+      Fastest: use the deploy script in the repo root —
+      <code>bash deploy.sh --ngrok-token YOUR_TOKEN</code>.
+      It installs Go 1.22, Ollama, pulls <code>qwen2.5:7b</code> +
+      <code>mxbai-embed-large</code>, builds the v8.8 binary with the recursive
+      refiner, starts it in tmux, and prints the ngrok URL to paste above.
+      ~8 min cold start on a T4.
     </p>
-    <p>
-      Or locally:
-    </p>
+    <p>Or locally:</p>
     <pre><code>git clone https://github.com/Corekeeper-research/dcs-gate
-cd dcs-gate
-docker compose up           # bring up Ollama + the binary
-# paste http://localhost:8081 above</code></pre>
+cd dcs-gate/work/dcs-gate
+go build -o dcs-gate ./...
+ollama serve &amp;
+ollama pull qwen2.5:7b mxbai-embed-large
+PORT=8080 ./dcs-gate
+# paste http://localhost:8080 above</code></pre>
     <p>
-      The backend you point at must implement the v8.7 streaming protocol described in
-      <a href="/docs.html">the docs</a>.
+      The backend must implement the v8.8 streaming protocol:
+      <a href="/docs.html">see docs</a>.
     </p>
   </div>
 </main>
@@ -144,40 +300,16 @@ docker compose up           # bring up Ollama + the binary
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// DCS-Gate streaming demo — vanilla JS SSE client.
-//
-// We use fetch + ReadableStream rather than the built-in EventSource because
-// EventSource only supports GET; we need POST with a JSON payload.
+// DCS-Gate demo v8.8 — all modes now use /auth/stream (SSE).
 // ─────────────────────────────────────────────────────────────────────────────
-
 const $ = (id) => document.getElementById(id);
 
-const goBtn        = $("go");
-const statusEl     = $("status");
-const backendEl    = $("backend");
-const resultsEl    = $("results");
-const preBox       = $("pre");
-const preBody      = $("pre_body");
-const thinkingBox  = $("thinking_box");
-const thinkingBody = $("thinking_body");
-const thinkingMeta = $("thinking_meta");
-const finalBox     = $("final");
-const finalTier    = $("final_tier");
-const finalBody    = $("final_body");
-const evLogBox     = $("event_log");
-const evLogBody    = $("event_log_body");
-const refinedBox   = $("refined");
-const refOrig      = $("ref_orig");
-const refNew       = $("ref_new");
-const refReason    = $("ref_reason");
-const refBlockedRow= $("ref_blocked_row");
-const refBlocked   = $("ref_blocked");
-const rOptional    = $("r_optional");
+const goBtn         = $("go");
+const statusEl      = $("status");
+const backendEl     = $("backend");
+const resultsEl     = $("results");
+const rOptional     = $("r_optional");
 
-// Mode selector. Default = both. SSE streaming is only available for the
-// analyze-only mode because /auth/stream takes a response and emits chunks
-// of the judge's chain-of-thought; refine / both go through the synchronous
-// /auth endpoint and render the verdict once it lands.
 let currentMode = "both";
 const modeButtons = document.querySelectorAll(".demo-modes button");
 for (const btn of modeButtons) {
@@ -189,20 +321,19 @@ for (const btn of modeButtons) {
     updateGoLabel();
   });
 }
-
 function updateGoLabel() {
-  if (currentMode === "analyze")     goBtn.textContent = "Analyze (streaming)";
-  else if (currentMode === "refine") goBtn.textContent = "Refine question";
-  else                               goBtn.textContent = "Analyze + refine";
+  goBtn.textContent = {
+    both:    "Analyze + Refine (streaming)",
+    analyze: "Analyze (streaming)",
+    refine:  "Refine (streaming)",
+  }[currentMode] || "Run";
 }
 updateGoLabel();
 
-// Persist the backend URL across reloads so the visitor doesn't re-type it.
 const stored = localStorage.getItem("dcs_backend");
 if (stored) backendEl.value = stored;
-backendEl.addEventListener("change", () => {
-  localStorage.setItem("dcs_backend", backendEl.value.trim());
-});
+backendEl.addEventListener("change", () =>
+  localStorage.setItem("dcs_backend", backendEl.value.trim()));
 
 function setStatus(text, cls) {
   statusEl.textContent = text;
@@ -213,117 +344,84 @@ function normalizeBackend(raw) {
   let url = (raw || "").trim();
   if (!url) return "";
   if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-  // strip trailing slash
   return url.replace(/\/+$/, "");
 }
 
 function appendEvent(name, raw) {
+  const evLogBox = $("event_log");
   evLogBox.style.display = "block";
   const line = document.createElement("div");
   line.className = "ev-line";
-  const nm = document.createElement("span");
-  nm.className = "ev-name";
-  nm.textContent = name + ": ";
-  const dt = document.createElement("span");
-  dt.className = "ev-data";
-  const summary = (() => {
-    try {
-      const parsed = JSON.parse(raw);
-      const keys = Object.keys(parsed).slice(0, 5).join(", ");
-      return "{ " + keys + (Object.keys(parsed).length > 5 ? ", …" : "") + " }";
-    } catch (_) { return raw.slice(0, 80); }
-  })();
-  dt.textContent = summary;
-  line.appendChild(nm);
-  line.appendChild(dt);
-  evLogBody.appendChild(line);
-  evLogBody.scrollTop = evLogBody.scrollHeight;
+  const nm = document.createElement("span"); nm.className = "ev-name"; nm.textContent = name + ": ";
+  const dt = document.createElement("span"); dt.className = "ev-data";
+  try {
+    const parsed = JSON.parse(raw);
+    const keys = Object.keys(parsed).slice(0, 5).join(", ");
+    dt.textContent = "{ " + keys + (Object.keys(parsed).length > 5 ? ", …" : "") + " }";
+  } catch (_) { dt.textContent = raw.slice(0, 80); }
+  line.appendChild(nm); line.appendChild(dt);
+  $("event_log_body").appendChild(line);
+  $("event_log_body").scrollTop = $("event_log_body").scrollHeight;
 }
 
-function reset() {
+function resetUI() {
   resultsEl.style.display = "block";
-  preBox.style.display = "none";
-  preBody.innerHTML = "";
-  thinkingBox.style.display = "none";
-  thinkingBody.textContent = "";
-  thinkingMeta.textContent = "";
-  finalBox.style.display = "none";
-  finalTier.textContent = "Final verdict";
-  finalBody.innerHTML = "";
-  finalBox.className = "verdict";
-  refinedBox.style.display = "none";
-  refOrig.textContent = "";
-  refNew.textContent = "";
-  refReason.textContent = "";
-  refBlockedRow.style.display = "none";
-  refBlocked.innerHTML = "";
-  evLogBox.style.display = "none";
-  evLogBody.innerHTML = "";
+  ["pre","thinking_box","final","refiner_stream","event_log"].forEach(id => {
+    const el = $(id); if (el) el.style.display = "none";
+  });
+  $("pre_body").innerHTML = "";
+  $("thinking_body").textContent = "";
+  $("thinking_meta").textContent = "";
+  $("final").className = "verdict";
+  $("final_tier").textContent = "Final verdict";
+  $("final_body").innerHTML = "";
+  $("event_log_body").innerHTML = "";
+  // Refiner
+  ["pass1","pass2","refine_final","refine_priming_info","pass1_thinking_wrap","pass2_thinking_wrap","cands_grid"].forEach(id => {
+    const el = $(id); if (el) el.style.display = "none";
+  });
+  $("pass1_thinking").textContent = "";
+  $("pass2_thinking").textContent = "";
+  $("pass1_status").textContent = "thinking…";
+  $("pass2_status").textContent = "thinking…";
+  $("cand_a").className = "cand-card";
+  $("cand_b").className = "cand-card";
 }
 
 goBtn.addEventListener("click", async () => {
   const backend = normalizeBackend(backendEl.value);
-  if (!backend) {
-    setStatus("Please enter a backend URL above first.", "error");
-    backendEl.focus();
-    return;
-  }
-
+  if (!backend) { setStatus("Please enter a backend URL above first.", "error"); backendEl.focus(); return; }
   const question = $("q").value.trim();
   const response = $("r").value.trim();
+  if (currentMode === "refine"  && !question) { setStatus("Question field required for refine mode.", "error"); return; }
+  if (currentMode === "analyze" && !response) { setStatus("Response field required for analyze mode.", "error"); return; }
+  if (currentMode === "both" && (!question || !response)) { setStatus("Both fields required for analyze+refine mode.", "error"); return; }
 
-  // Per-mode validation mirrors main.go: refine needs only a question,
-  // analyze needs only a response, both needs both fields populated.
-  if (currentMode === "refine" && !question) {
-    setStatus("Question field can't be empty in refine mode.", "error");
-    return;
-  }
-  if (currentMode === "analyze" && !response) {
-    setStatus("Response field can't be empty in analyze mode.", "error");
-    return;
-  }
-  if (currentMode === "both" && (!question || !response)) {
-    setStatus("Both fields are required in analyze+refine mode.", "error");
-    return;
-  }
-
-  reset();
+  resetUI();
   goBtn.disabled = true;
-
-  if (currentMode === "analyze") {
-    await runStreamingAnalyze(backend, question, response);
-  } else {
-    await runSyncRequest(backend, question, response, currentMode);
-  }
+  await runStream(backend, question, response, currentMode);
+  goBtn.disabled = false;
 });
 
-// Streaming path: POST /auth/stream with mode=analyze and parse SSE events.
-async function runStreamingAnalyze(backend, question, response) {
+async function runStream(backend, question, response, mode) {
   setStatus("Connecting to " + backend + " …", "running");
-
   let res;
   try {
     res = await fetch(backend + "/auth/stream", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Lets the request bypass the ngrok-free interstitial when the
-        // backend is exposed through an ngrok tunnel.
         "ngrok-skip-browser-warning": "true",
       },
-      body: JSON.stringify({ question, response, mode: "analyze" }),
+      body: JSON.stringify({ question, response, mode }),
     });
   } catch (e) {
     renderConnectionError(backend, e.message);
     return;
   }
+  if (!res.ok) { await renderHttpError(res); return; }
 
-  if (!res.ok) {
-    await renderHttpError(res);
-    return;
-  }
-
-  setStatus("Streaming …", "running");
+  setStatus("Streaming…", "running");
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buf = "";
@@ -337,10 +435,12 @@ async function runStreamingAnalyze(backend, question, response) {
       while ((idx = buf.indexOf("\n\n")) >= 0) {
         const block = buf.slice(0, idx);
         buf = buf.slice(idx + 2);
-        const m = /^event: (\S+)\ndata: (.+)$/m.exec(block);
-        if (!m) continue;
-        const name = m[1];
-        const rawData = m[2];
+        let name = "", rawData = "";
+        for (const line of block.split("\n")) {
+          if (line.startsWith("event: ")) name = line.slice(7).trim();
+          else if (line.startsWith("data: ")) rawData = line.slice(6);
+        }
+        if (!name || !rawData) continue;
         let data;
         try { data = JSON.parse(rawData); } catch (_) { continue; }
         appendEvent(name, rawData);
@@ -350,193 +450,191 @@ async function runStreamingAnalyze(backend, question, response) {
     setStatus("Done.", "done");
   } catch (e) {
     setStatus("Stream interrupted: " + e.message, "error");
-  } finally {
-    goBtn.disabled = false;
   }
 }
 
-// Synchronous path: POST /auth with mode=refine|both. /auth/stream only
-// emits analyze-side events, so refine/both go through the non-streaming
-// endpoint and we render the response once it lands. mode=both can take
-// ~150-220 s on 2x T4 because it still runs the full judge pipeline.
-async function runSyncRequest(backend, question, response, mode) {
-  const label = mode === "refine" ? "Refining question" : "Analyzing + refining";
-  setStatus(label + " via " + backend + " … (no streaming for this mode)", "running");
+function handleEvent(name, data) {
+  switch (name) {
 
-  let res;
-  try {
-    res = await fetch(backend + "/auth", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      },
-      body: JSON.stringify({ question, response, mode }),
-    });
-  } catch (e) {
-    renderConnectionError(backend, e.message);
-    return;
-  }
-
-  if (!res.ok) {
-    await renderHttpError(res);
-    return;
-  }
-
-  let data;
-  try {
-    data = await res.json();
-  } catch (e) {
-    setStatus("Bad response: " + e.message, "error");
-    goBtn.disabled = false;
-    return;
-  }
-
-  // mode=both returns analysis + refined_question; mode=refine returns only
-  // refined_question. Render whichever fields are present.
-  if (data.analysis) {
-    if (data.analysis.judge_thinking) {
-      thinkingBox.style.display = "block";
-      thinkingBody.textContent = data.analysis.judge_thinking;
-      thinkingMeta.textContent = "✓ thinking complete (" + data.analysis.judge_thinking.length + " chars).";
+    // ── Analyze side ────────────────────────────────────────────────
+    case "pre_analysis": {
+      $("pre").style.display = "block";
+      const top1 = (data.baseline_top1 || 0).toFixed(3);
+      const fi = (data.intent_chain && data.intent_chain[0] && data.intent_chain[0].intent) || "—";
+      const traj = (data.trajectory && data.trajectory.predictability) || "—";
+      const pole = (data.pole_score && data.pole_score.label) || "—";
+      const mc = (data.markers && data.markers.length) || 0;
+      $("pre_body").innerHTML =
+        '<table class="spec" style="margin:0">' +
+        '<tr><td><code>baseline_top1</code></td><td><b>' + top1 + '</b></td></tr>' +
+        '<tr><td><code>first intent</code></td><td>' + esc(fi) + '</td></tr>' +
+        '<tr><td><code>trajectory</code></td><td>' + esc(traj) + '</td></tr>' +
+        '<tr><td><code>pole</code></td><td>' + esc(pole) + '</td></tr>' +
+        '<tr><td><code>markers found</code></td><td>' + mc + '</td></tr>' +
+        '</table>';
+      break;
     }
-    renderFinalVerdict(data.analysis);
+    case "judge_loading":
+      $("thinking_box").style.display = "block";
+      $("thinking_meta").textContent = "Loading " + (data.model || "judge") + "…";
+      break;
+
+    case "thinking_chunk":
+      $("thinking_box").style.display = "block";
+      $("thinking_body").textContent += data.chunk || "";
+      $("thinking_body").scrollTop = $("thinking_body").scrollHeight;
+      $("thinking_meta").textContent = (data.cumulative_chars || 0) + " chars of reasoning";
+      break;
+
+    case "thinking_complete":
+      $("thinking_meta").textContent = "✓ thinking complete (" + (data.total_chars || 0) + " chars). Producing analysis…";
+      break;
+
+    case "complete":
+      renderFinalVerdict(data);
+      break;
+
+    case "parse_error":
+      $("final").style.display = "block";
+      $("final").className = "verdict mid";
+      $("final_tier").textContent = "parse_error · thinking preserved";
+      $("final_body").innerHTML = '<p>Judge reasoning preserved above; final JSON did not parse.</p>' +
+        '<pre><code>' + esc((data.raw_response || "").slice(0, 800)) + '</code></pre>';
+      break;
+
+    // ── Refiner side ────────────────────────────────────────────────
+    case "refine_loading":
+      $("refiner_stream").style.display = "block";
+      setStatus("Recursive refiner started…", "running");
+      break;
+
+    case "refine_priming": {
+      const pi = $("refine_priming_info");
+      const parts = [];
+      if (data.model) parts.push("Model: " + data.model);
+      if (data.prompt_chars) parts.push("Prompt: " + data.prompt_chars + " chars");
+      if (data.cold) parts.push("Cold mode (no prior analysis)");
+      else if (data.has_verdict || data.has_topk) parts.push("Primed with prior analysis + corpus");
+      pi.textContent = parts.join("  ·  ");
+      pi.style.display = parts.length ? "block" : "none";
+      $("pass1").style.display = "block";
+      $("pass1_status").textContent = "thinking…";
+      setStatus("Pass 1: generating candidates…", "running");
+      break;
+    }
+
+    case "refine_candidates_thinking_chunk":
+      $("pass1_thinking_wrap").style.display = "block";
+      $("pass1_thinking").textContent += data.chunk || "";
+      $("pass1_thinking").scrollTop = $("pass1_thinking").scrollHeight;
+      break;
+
+    case "refine_candidates_thinking_complete":
+      $("pass1_status").textContent = "generating candidates…";
+      break;
+
+    case "refine_candidates_complete": {
+      const ca = data.candidate_a || {};
+      const cb = data.candidate_b || {};
+      $("cands_grid").style.display = "grid";
+      $("cand_a_strategy").textContent = ca.strategy || "—";
+      $("cand_a_question").textContent = ca.refined_question || "—";
+      $("cand_a_reasoning").textContent = ca.reasoning || "";
+      $("cand_b_strategy").textContent = cb.strategy || "—";
+      $("cand_b_question").textContent = cb.refined_question || "—";
+      $("cand_b_reasoning").textContent = cb.reasoning || "";
+      $("pass1_status").textContent = "done";
+      $("pass2").style.display = "block";
+      $("pass2_status").textContent = "thinking…";
+      setStatus("Pass 2: recursive selection…", "running");
+      break;
+    }
+
+    case "refine_selection_thinking_chunk":
+      $("pass2_thinking_wrap").style.display = "block";
+      $("pass2_thinking").textContent += data.chunk || "";
+      $("pass2_thinking").scrollTop = $("pass2_thinking").scrollHeight;
+      break;
+
+    case "refine_selection_thinking_complete":
+      $("pass2_status").textContent = "selecting winner…";
+      break;
+
+    case "refine_complete": {
+      $("pass2_status").textContent = "done";
+      // Mark winner/loser on candidate cards
+      const wi = data.winner_index;
+      if (wi === 0) {
+        $("cand_a").className = "cand-card winner";
+        $("cand_b").className = "cand-card loser";
+        $("cand_a").innerHTML += '<span class="cand-badge badge-winner">WINNER</span>';
+        $("cand_b").innerHTML += '<span class="cand-badge badge-loser">DISCARDED</span>';
+      } else if (wi === 1) {
+        $("cand_b").className = "cand-card winner";
+        $("cand_a").className = "cand-card loser";
+        $("cand_b").innerHTML += '<span class="cand-badge badge-winner">WINNER</span>';
+        $("cand_a").innerHTML += '<span class="cand-badge badge-loser">DISCARDED</span>';
+      }
+      // Selection final card
+      $("refine_final").style.display = "block";
+      $("sel_question").textContent = data.refined_question || "—";
+      $("sel_reasoning").textContent = data.selection_reasoning || data.refinement_reasoning || "—";
+      $("sel_loser").textContent = data.loser_critique || "—";
+      $("sel_original").textContent = "Original: " + (data.original_question || $("q").value.trim());
+      break;
+    }
+
+    case "error":
+      setStatus("Error: " + (data.message || data.stage || "unknown"), "error");
+      break;
   }
-  if (data.refined_question) {
-    renderRefined(data.refined_question);
-  }
-  setStatus("Done in " + (data.latency_ms || "?") + " ms.", "done");
-  goBtn.disabled = false;
+}
+
+function renderFinalVerdict(data) {
+  const score = typeof data.authenticity_score === "number" ? data.authenticity_score : 0;
+  let cls = "low";
+  if (score >= 65) cls = "high";
+  else if (score >= 40) cls = "mid";
+  $("final").style.display = "block";
+  $("final").className = "verdict " + cls;
+  $("final_tier").textContent = (data.depth_assessment || "verdict").toUpperCase() + " · final";
+  let html = '<div class="v-score">' + score + '<span style="font-size:1rem;color:var(--text-faint);font-weight:400">/100</span></div>';
+  html += '<table class="spec" style="margin:8px 0 0">';
+  if (data.depth_assessment) html += '<tr><td><code>depth</code></td><td><b>' + esc(data.depth_assessment) + '</b></td></tr>';
+  if (data.dominant_strategy) html += '<tr><td><code>dominant</code></td><td>' + esc(data.dominant_strategy) + '</td></tr>';
+  if (data.trajectory_predictability) html += '<tr><td><code>trajectory</code></td><td>' + esc(data.trajectory_predictability) + '</td></tr>';
+  if (Array.isArray(data.pattern_breaks) && data.pattern_breaks.length)
+    html += '<tr><td><code>pattern_breaks</code></td><td>' + data.pattern_breaks.map(b => '<span class="tag">' + esc(b) + '</span>').join(" ") + '</td></tr>';
+  if (Array.isArray(data.genuine_elements) && data.genuine_elements.length)
+    html += '<tr><td><code>genuine</code></td><td>' + data.genuine_elements.map(g => '<span class="tag green">' + esc(g) + '</span>').join(" ") + '</td></tr>';
+  if (data.notes) html += '<tr><td><code>notes</code></td><td>' + esc(data.notes) + '</td></tr>';
+  html += '</table>';
+  $("final_body").innerHTML = html;
 }
 
 function renderConnectionError(backend, msg) {
   setStatus("Connection failed: " + msg, "error");
-  finalBox.style.display = "block";
-  finalBox.classList.add("low");
-  finalTier.textContent = "Connection error";
-  finalBody.innerHTML = "<p>Couldn't reach <code>" + escapeHtml(backend) + "</code>. Common causes:</p><ul><li>The backend isn't running on that URL.</li><li>The Colab tunnel expired (free ngrok = 8 h max).</li><li>CORS &mdash; the backend must allow this origin (the v8.7 default does).</li></ul>";
-  goBtn.disabled = false;
+  $("final").style.display = "block";
+  $("final").className = "verdict low";
+  $("final_tier").textContent = "Connection error";
+  $("final_body").innerHTML = "<p>Couldn't reach <code>" + esc(backend) + "</code>. Common causes:</p>" +
+    "<ul><li>Backend not running at that URL.</li><li>ngrok tunnel expired (free = 8 h max).</li>" +
+    "<li>CORS — backend must allow this origin.</li></ul>";
 }
 
 async function renderHttpError(res) {
   const txt = await res.text();
   setStatus("HTTP " + res.status, "error");
-  finalBox.style.display = "block";
-  finalBox.classList.add("low");
-  finalTier.textContent = "HTTP " + res.status;
-  finalBody.innerHTML = "<pre><code>" + escapeHtml(txt) + "</code></pre>";
-  goBtn.disabled = false;
+  $("final").style.display = "block";
+  $("final").className = "verdict low";
+  $("final_tier").textContent = "HTTP " + res.status;
+  $("final_body").innerHTML = "<pre><code>" + esc(txt) + "</code></pre>";
 }
 
-function handleEvent(name, data) {
-  if (name === "pre_analysis") {
-    preBox.style.display = "block";
-    const top1 = (data.baseline_top1 || 0).toFixed(3);
-    const firstIntent = (data.intent_chain && data.intent_chain[0] && data.intent_chain[0].intent) || "—";
-    const traj = (data.trajectory && data.trajectory.predictability) || "—";
-    const pole = (data.pole_score && data.pole_score.label) || "—";
-    const markersCount = (data.markers && data.markers.length) || 0;
-    preBody.innerHTML =
-      '<table class="spec" style="margin:0">' +
-      '<tr><td><code>baseline_top1</code></td><td><b>' + top1 + '</b></td></tr>' +
-      '<tr><td><code>first intent</code></td><td>' + escapeHtml(firstIntent) + '</td></tr>' +
-      '<tr><td><code>trajectory</code></td><td>' + escapeHtml(traj) + '</td></tr>' +
-      '<tr><td><code>pole</code></td><td>' + escapeHtml(pole) + '</td></tr>' +
-      '<tr><td><code>markers found</code></td><td>' + markersCount + '</td></tr>' +
-      '</table>';
-  } else if (name === "judge_loading") {
-    thinkingBox.style.display = "block";
-    thinkingMeta.textContent = "Loading " + (data.model || "judge") + " …";
-  } else if (name === "thinking_chunk") {
-    thinkingBox.style.display = "block";
-    thinkingBody.textContent += data.chunk || "";
-    thinkingBody.scrollTop = thinkingBody.scrollHeight;
-    thinkingMeta.textContent = (data.cumulative_chars || 0) + " chars of reasoning";
-  } else if (name === "thinking_complete") {
-    thinkingMeta.textContent = "✓ thinking complete (" + (data.total_chars || 0) + " chars). Producing analysis…";
-  } else if (name === "analysis_chunk") {
-    // The complete event will carry the parsed verdict; partial JSON is hidden
-    // on purpose so the visitor doesn't see half-formed structure.
-  } else if (name === "complete") {
-    renderFinalVerdict(data);
-  } else if (name === "parse_error") {
-    finalBox.style.display = "block";
-    finalBox.className = "verdict mid";
-    finalTier.textContent = "parse_error · thinking preserved";
-    finalBody.innerHTML =
-      '<p>The judge produced valid reasoning but the final JSON did not parse. The thinking is preserved in the box above.</p>' +
-      '<pre><code>' + escapeHtml((data.raw_response || "").slice(0, 800)) + '</code></pre>';
-  } else if (name === "error") {
-    finalBox.style.display = "block";
-    finalBox.className = "verdict low";
-    finalTier.textContent = (data.stage || "error");
-    finalBody.innerHTML = '<p>' + escapeHtml(data.message || "Unknown error") + '</p>';
-  }
-}
-
-// renderFinalVerdict produces the score block from either the streaming
-// `complete` event or the analysis object returned by the synchronous
-// /auth endpoint. Both carry the same shape (authenticity_score,
-// depth_assessment, dominant_strategy, pattern_breaks, genuine_elements,
-// notes).
-function renderFinalVerdict(data) {
-  const score = (typeof data.authenticity_score === "number") ? data.authenticity_score : 0;
-  let cls = "low";
-  if (score >= 65) cls = "high";
-  else if (score >= 40) cls = "mid";
-  finalBox.style.display = "block";
-  finalBox.className = "verdict " + cls;
-  finalTier.textContent = (data.depth_assessment || "verdict").toUpperCase() + " · final";
-  let html = '<div class="v-score">' + score + '<span style="font-size:1rem;color:var(--text-faint);font-weight:400">/100</span></div>';
-  html += '<table class="spec" style="margin:8px 0 0">';
-  if (data.depth_assessment) {
-    html += '<tr><td><code>depth</code></td><td><b>' + escapeHtml(data.depth_assessment) + '</b></td></tr>';
-  }
-  if (data.dominant_strategy) {
-    html += '<tr><td><code>dominant</code></td><td>' + escapeHtml(data.dominant_strategy) + '</td></tr>';
-  }
-  if (Array.isArray(data.pattern_breaks) && data.pattern_breaks.length) {
-    html += '<tr><td><code>pattern_breaks</code></td><td>' +
-      data.pattern_breaks.map(b => '<span class="tag">' + escapeHtml(b) + '</span>').join(" ") +
-      '</td></tr>';
-  }
-  if (Array.isArray(data.genuine_elements) && data.genuine_elements.length) {
-    html += '<tr><td><code>genuine</code></td><td>' +
-      data.genuine_elements.map(g => '<span class="tag green">' + escapeHtml(g) + '</span>').join(" ") +
-      '</td></tr>';
-  }
-  if (data.notes) {
-    html += '<tr><td><code>notes</code></td><td>' + escapeHtml(data.notes) + '</td></tr>';
-  }
-  html += '</table>';
-  finalBody.innerHTML = html;
-}
-
-// renderRefined fills the refined-question card. Shape matches
-// types.go.RefinedQuestion: original_question, refined_question,
-// refinement_reasoning, patterns_blocked.
-function renderRefined(r) {
-  refinedBox.style.display = "block";
-  refOrig.textContent = r.original_question || "";
-  refNew.textContent = r.refined_question || "";
-  refReason.textContent = r.refinement_reasoning || "";
-  if (Array.isArray(r.patterns_blocked) && r.patterns_blocked.length) {
-    refBlockedRow.style.display = "";
-    refBlocked.innerHTML = r.patterns_blocked
-      .map(p => '<span class="tag accent">' + escapeHtml(p) + '</span>')
-      .join(" ");
-  } else {
-    refBlockedRow.style.display = "none";
-  }
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;",
-    '"': "&quot;", "'": "&#39;",
-  })[c]);
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 }
 </script>
-
 </body>
 </html>
