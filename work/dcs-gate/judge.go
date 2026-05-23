@@ -59,7 +59,7 @@ You will receive structured pre-analysis from a Go service:
 - markers: control markers with source ("formal" regex or "semantic" embedding), morphology, position
 - trajectory: predictability (high/moderate/low) and whether it is formulaic
 - pole_score: bucket -1 (performed doubt), 0 (neutral), +1 (performed certainty)
-- baseline_top1: cosine to nearest neighbor in the 8957-vector control corpus
+- baseline_top1: cosine to nearest neighbor in the 61-vector control corpus (36 core + 13 shadow + 12 edge)
 - top_k: 5 nearest neighbors with their texts
 - top1_metrics: pre-computed labels of the nearest baseline entry (continuidad, cierre_artificial, deriva, adaptación, textura) annotated by a domain expert (present only when baseline_top1 > 0.70)
 - top1_notes: prose annotation by the corpus author about the nearest neighbor (present only when baseline_top1 > 0.80; absent otherwise)
