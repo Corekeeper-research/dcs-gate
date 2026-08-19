@@ -807,3 +807,44 @@ footer.site .legal {
 @media (max-width: 600px) {
   .nav-links a:not(.btn-cta) { display: none; }
 }
+
+/* ────────── services (hire me) ────────── */
+
+#services {
+  padding-top: 48px;
+  padding-bottom: 8px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.service-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.service-card .price {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.service-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  color: var(--text);
+}
+
+.service-card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
