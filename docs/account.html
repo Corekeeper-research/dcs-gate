@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Servicios y checkout — DCS-Gate</title>
+<meta name="description" content="Elige un servicio, crea tu cuenta y recorre el checkout de pruebas de DCS-Gate.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://dcs-store.corekeeper-research.workers.dev https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'">
+<link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/store.css">
+<script src="/assets/store.js" defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner"><a class="nav-brand" href="/">dcs-gate <span class="v">services</span></a><div class="nav-links"><a href="/#services">Servicios</a><a href="/docs.html">Documentación</a><a href="/account.html">Mi cuenta</a></div></div></nav>
+<main class="store-shell">
+<header class="store-heading"><span class="eyebrow">DCS-Gate / Servicios</span><h1>De la idea al siguiente paso.</h1><p class="muted">Elige un servicio y continúa con tu cuenta.</p><ol class="store-steps" aria-label="Pasos del checkout"><li>01 · Cuenta</li><li>02 · Servicio</li><li>03 · Facturación y pago en Stripe</li><li>04 · Confirmación</li></ol></header>
+<noscript><div class="store-alert">Activa JavaScript para usar tu cuenta y el checkout. También puedes escribir a <a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a>.</div></noscript>
+<div id="notice" role="status" aria-live="polite" class="store-alert" hidden></div>
+<div class="store-columns">
+<div>
+<section id="auth-panel" class="store-panel" aria-labelledby="auth-title">
+<h2 id="auth-title">Tu cuenta</h2><p class="store-note">Guarda tus pedidos de prueba en un solo lugar.</p>
+<div class="store-tabs" aria-label="Acceso a la cuenta"><button class="store-tab" id="signup-tab" type="button" aria-pressed="true">Crear cuenta</button><button class="store-tab" id="login-tab" type="button" aria-pressed="false">Iniciar sesión</button></div>
+<form id="auth-form">
+<div id="name-field"><label for="name">Nombre</label><input id="name" name="name" autocomplete="name" minlength="2" maxlength="100" required></div>
+<label for="email">Correo electrónico</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+<label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required aria-describedby="password-help"><p id="password-help" class="store-note">De 12 a 128 caracteres. Esta cuenta es para el recorrido de pruebas; usa una contraseña distinta a la de otros sitios.</p>
+<label class="store-check" id="terms-field"><input id="terms" type="checkbox" required><span>Acepto las <a href="/store-terms.html">condiciones del checkout de pruebas</a> y el tratamiento de datos descrito allí.</span></label>
+<div id="auth-security" class="store-security"></div>
+<button id="auth-submit" class="store-button store-width" disabled>Crear cuenta</button>
+<p class="store-note">No enviamos correos de verificación. Tu sesión dura dos horas y se cierra al cerrar esta pestaña.</p>
+</form></section>
+<section id="checkout-panel" class="store-panel" aria-labelledby="checkout-title" hidden>
+<div class="store-row"><h2 id="checkout-title">Elige tu servicio</h2><button id="logout" class="store-button store-secondary" type="button">Salir</button></div><p id="greeting" class="muted"></p>
+<form id="checkout-form"><label for="product">Servicio</label><select id="product" required></select>
+<div class="store-divider"></div><h3>Facturación</h3><p class="store-note">En la siguiente pantalla, Stripe te pedirá el nombre y la dirección de facturación: país, calle, ciudad, estado y código postal según el país. Los datos de tarjeta se introducen directamente en Stripe.</p>
+<label class="store-check"><input id="test-consent" type="checkbox" required><span>Entiendo que este checkout está en <strong>modo de pruebas</strong>, no contrata servicios reales y solo admite tarjetas de prueba.</span></label>
+<div id="checkout-security" class="store-security"></div><button id="checkout-submit" class="store-button store-width" disabled>Continuar a Stripe</button><p class="store-note">No se cobra dinero real.</p></form></section>
+<section id="orders-panel" class="store-panel store-orders" hidden><div class="store-row"><h2>Tus pedidos</h2><button id="refresh" type="button" class="store-button store-secondary">Actualizar</button></div><p class="store-note">El estado se confirma mediante eventos de Stripe. Volver del checkout no confirma el pago por sí solo.</p><div id="orders"></div></section>
+</div>
+<aside class="store-panel store-summary" aria-labelledby="summary-title"><span class="store-mode">Modo de pruebas</span><h2 id="summary-title">Resumen</h2><p id="summary-name">Automation Management</p><div id="summary-price" class="store-price">$14 USD</div><p id="summary-frequency" class="store-note">Pago único de prueba.</p><div class="store-divider"></div><p id="summary-detail" class="store-note">El precio mostrado reproduce el servicio del catálogo. Este recorrido no genera un encargo ni un cargo real.</p><p class="store-note">Para el formulario de Stripe puedes usar <code>4242 4242 4242 4242</code>, una fecha futura y cualquier CVC de prueba.</p><a href="https://docs.stripe.com/testing" target="_blank" rel="noopener noreferrer">Ver escenarios de prueba de Stripe ↗</a><div class="store-divider"></div><p class="store-note store-help">¿Quieres contratar un servicio real? Acuerda el alcance directamente con Daniel: <a href="mailto:corekeepper@gmail.com?subject=Service%20request">corekeepper@gmail.com</a>.</p><a class="store-note" href="/store-terms.html">Condiciones y privacidad de este recorrido</a></aside>
+</div></main>
+</body></html>

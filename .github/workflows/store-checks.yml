@@ -1,0 +1,19 @@
+name: Storefront checks
+on:
+  push:
+    paths: ['docs/**', 'store-api/**', '.github/workflows/store-checks.yml']
+  pull_request:
+    paths: ['docs/**', 'store-api/**', '.github/workflows/store-checks.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test store-api/worker.test.mjs
+      - run: node --check docs/assets/store.js
+      - run: node --check store-api/worker.mjs
