@@ -6,14 +6,14 @@
 <meta name="description" content="Elige un servicio, crea tu cuenta y recorre el checkout de pruebas de DCS-Gate.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://dcs-store.corekeeper-research.workers.dev https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'">
-<link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/store.css">
-<script src="/assets/store.js?v=20261109-2" defer></script>
+<link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/store.css?v=20261109-3">
+<script src="/assets/store.js?v=20261109-3" defer></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
 </head>
 <body>
 <nav class="nav"><div class="nav-inner"><a class="nav-brand" href="/">dcs-gate <span class="v">services</span></a><div class="nav-links"><a href="/#services">Servicios</a><a href="/docs.html">Documentación</a><a href="/account.html">Mi cuenta</a></div></div></nav>
 <main class="store-shell">
-<header class="store-heading"><span class="eyebrow">DCS-Gate / Servicios</span><h1>De la idea al siguiente paso.</h1><p class="muted">Elige un servicio y continúa con tu cuenta.</p><ol class="store-steps" aria-label="Pasos del checkout"><li>01 · Cuenta</li><li>02 · Servicio</li><li>03 · Facturación y pago en Stripe</li><li>04 · Confirmación</li></ol></header>
+<header class="store-heading"><span class="eyebrow">DCS-Gate / Servicios</span><h1>De la idea al siguiente paso.</h1><p class="muted">Elige un servicio y continúa con tu cuenta.</p><ol class="store-steps" aria-label="Pasos del checkout"><li>01 · Cuenta</li><li>02 · Servicio y facturación</li><li>03 · Pago en Stripe</li><li>04 · Confirmación</li></ol></header>
 <noscript><div class="store-alert">Activa JavaScript para usar tu cuenta y el checkout. También puedes escribir a <a href="mailto:corekeepper@gmail.com">corekeepper@gmail.com</a>.</div></noscript>
 <div id="notice" role="status" aria-live="polite" class="store-alert" hidden></div>
 <div class="store-columns">
@@ -33,7 +33,17 @@
 <section id="checkout-panel" class="store-panel" aria-labelledby="checkout-title" hidden>
 <div class="store-row"><h2 id="checkout-title">Elige tu servicio</h2><button id="logout" class="store-button store-secondary" type="button">Salir</button></div><p id="greeting" class="muted"></p>
 <form id="checkout-form"><label for="product">Servicio</label><select id="product" required></select>
-<div class="store-divider"></div><h3>Facturación</h3><p class="store-note">En la siguiente pantalla, Stripe te pedirá el nombre y la dirección de facturación: país, calle, ciudad, estado y código postal según el país. Los datos de tarjeta se introducen directamente en Stripe.</p>
+<div class="store-divider"></div><h3>Dirección de facturación</h3>
+<p class="store-note">Completa tu dirección aquí. Después continuarás a Stripe para el nombre, correo y pago. Usa datos ficticios en este recorrido de pruebas.</p>
+<fieldset class="billing-fields"><legend class="sr-only">Datos de facturación</legend>
+<label for="billing-name">Nombre de facturación</label><input id="billing-name" name="billing-name" autocomplete="billing name" maxlength="100" required>
+<label for="billing-country">País</label><select id="billing-country" name="billing-country" autocomplete="billing country" required></select>
+<label for="billing-line1">Calle y número</label><input id="billing-line1" name="billing-line1" autocomplete="billing address-line1" maxlength="200" required>
+<label for="billing-line2">Departamento, interior o referencia (opcional)</label><input id="billing-line2" name="billing-line2" autocomplete="billing address-line2" maxlength="200">
+<div class="billing-grid"><div><label for="billing-city">Ciudad</label><input id="billing-city" name="billing-city" autocomplete="billing address-level2" maxlength="100" required></div><div><label id="billing-state-label" for="billing-state">Estado / provincia</label><input id="billing-state" name="billing-state" autocomplete="billing address-level1" maxlength="100" required></div></div>
+<label id="billing-postal-label" for="billing-postal_code">Código postal</label><input id="billing-postal_code" name="billing-postal_code" autocomplete="billing postal-code" maxlength="20" required>
+</fieldset>
+<p class="store-note">La dirección se guarda con tu pedido y se recupera para tu siguiente checkout. Stripe puede pedir un código postal adicional según el método de pago.</p>
 <label class="store-check"><input id="test-consent" type="checkbox" required><span>Entiendo que este checkout está en <strong>modo de pruebas</strong>, no contrata servicios reales y solo admite tarjetas de prueba.</span></label>
 <div id="checkout-security" class="store-security"></div><button id="checkout-submit" class="store-button store-width" disabled>Continuar a Stripe</button><p class="store-note">No se cobra dinero real.</p></form></section>
 <section id="orders-panel" class="store-panel store-orders" hidden><div class="store-row"><h2>Tus pedidos</h2><button id="refresh" type="button" class="store-button store-secondary">Actualizar</button></div><p class="store-note">El estado se confirma mediante eventos de Stripe. Volver del checkout no confirma el pago por sí solo.</p><div id="orders"></div></section>

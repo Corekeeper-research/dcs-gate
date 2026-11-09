@@ -2,11 +2,11 @@
 
 The site stays on GitHub Pages (`docs/`). New pages are `checkout.html`, `account.html`, and `store-terms.html`. The existing five services link to a test-only checkout; a separate subscription reproduces a one-day trial followed by USD12/month in Stripe test mode. No real service is provisioned or sold through these links.
 
-The account flow is an actual Cloudflare Worker + D1 implementation. Stripe-hosted Payment Links collect billing name/address and payment details. The Worker never accepts card data and does not possess a Stripe API credential. It creates local orders, returns an allowlisted `buy.stripe.com/test_` link with an opaque order reference, and verifies signed Stripe webhook events. A return URL is not evidence of payment.
+The account flow is an actual Cloudflare Worker + D1 implementation. The site collects billing name/address and stores a per-order snapshot in D1. Stripe-hosted Payment Links collect name, email and payment details with `billing_address_collection=auto`; a payment method may still require a postcode. The Worker never accepts card data and does not possess a Stripe API credential. It creates local orders, returns an allowlisted `buy.stripe.com/test_` link with an opaque order reference, and verifies signed Stripe webhook events. A return URL is not evidence of payment.
 
 ## Deployment state (2026-11-08, Tijuana)
 
-The backend was deployed after account email verification. GET `/config` from the site origin returned the expected test-only catalog and Turnstile sitekey. The eight Node/SQLite tests pass. The frontend is published on GitHub Pages. In the deployed browser, the page loads the catalog and Turnstile completes successfully. Signed deployment probes sent with curl reached the Worker: invalid signature → HTTP400; valid signature → HTTP200; duplicate event → HTTP200. Full account signup and Stripe checkout completion still require an end-to-end user test.
+The backend was deployed after account email verification. GET `/config` from the site origin returned the expected test-only catalog and Turnstile sitekey. The ten Node/SQLite tests pass. The frontend is published on GitHub Pages. In the deployed browser, the page loads the catalog and Turnstile completes successfully. Signed deployment probes sent with curl reached the Worker: invalid signature → HTTP400; valid signature → HTTP200; duplicate event → HTTP200. Full account signup and Stripe checkout completion still require an end-to-end user test.
 
 Created resources (identifiers are not secrets):
 
@@ -18,7 +18,7 @@ Created resources (identifiers are not secrets):
 - Turnstile widget: `DCS-Gate account`, sitekey `0x4AAAAAAF5dEqAgxxMb-JgN`; hostname `diluidocognit.store`.
 - Stripe test account: `acct_1KA4voJ6LGLQ4OOc` (livemode=false).
 - Stripe test webhook: `we_1UZkCPJ6LGLQ4OOch07TPRG6`, destination `/stripe/webhook`, API version `2025-02-24.acacia`.
-- Six test Payment Links: see `CATALOG` in `worker.mjs`. All require billing address collection. Automatic tax is disabled for this test-only flow; live tax configuration is not part of this change.
+- Six test Payment Links: see `CATALOG` in `worker.mjs`. All use automatic (not mandatory full-address) billing collection and required individual name collection. Automatic tax is disabled for this test-only flow; live tax configuration is not part of this change.
 
 No secrets are committed. The initial deployment must bind:
 
@@ -50,6 +50,7 @@ These are Node/SQLite tests, not a full Cloudflare-runtime test suite. Local pre
 
 - Session bearer tokens: random 256-bit values, SHA-256 digests in D1; sessionStorage in the browser, two-hour expiry. Close-tab logout is local; the server-side token expires after two hours or explicit logout.
 - Passwords: PBKDF2-SHA256, random individual salt, 100,000 iterations (Workers-compatible Web Crypto); minimum 12 and maximum 128 characters.
+- `order_billing` stores validated per-order address snapshots; authenticated GET `/billing` returns only the latest address belonging to the current user. Addresses are never added to redirect URLs or request logs.
 - No email verification, password-reset delivery or automatic account deletion is implemented. The UI and conditions state that these are test accounts and recommend fictitious data and a unique password.
 - Subscription cancellation is currently administered in the Stripe test Dashboard, on request; self-service cancellation is not implemented.
 - Signup and checkout require Turnstile. Rate limits use atomic SQLite upserts. Cleanup of expired sessions and counters is sampled on requests.

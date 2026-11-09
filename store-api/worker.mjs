@@ -7,6 +7,23 @@ export const CATALOG = Object.freeze({
   consulting: {name:'Technical Consulting (1:1)',amount:1200,link:'https://buy.stripe.com/test_9B67sM6wr9u57gc30n3cc04',paymentLink:'plink_1UZkCCJ6LGLQ4OOcVR4Le0lu'},
   trial: {name:'Prueba de 1 día',amount:1200,link:'https://buy.stripe.com/test_6oUeVebQL9u52ZW9oL3cc05',paymentLink:'plink_1UZkCDJ6LGLQ4OOcL3D19cqc'}
 });
+export const COUNTRIES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
+export function validateBilling(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))fail(400,'Completa la dirección de facturación en el sitio antes de continuar.');
+  const out={};
+  for(const [key,max,required] of [['name',100,true],['country',2,true],['line1',200,true],['line2',200,false],['city',100,true],['state',100,false],['postal_code',20,false]]){
+    if(value[key]!==undefined&&typeof value[key]!=='string')fail(400,'Los campos de facturación deben ser texto.');
+    const text=(value[key]||'').trim();
+    if((required&&!text)||text.length>max||/[\x00-\x1f\x7f]/.test(text))fail(400,'Revisa los campos de facturación.');
+    out[key]=text;
+  }
+  if(!COUNTRIES.includes(out.country))fail(400,'Selecciona un país válido.');
+  if(['MX','US','CA'].includes(out.country)&&!out.state)fail(400,'Escribe el estado o provincia.');
+  if(['MX','US','CA','ES','BR'].includes(out.country)&&!out.postal_code)fail(400,'Escribe el código postal.');
+  const patterns={MX:/^\d{5}$/,US:/^\d{5}(-\d{4})?$/,CA:/^[A-Z]\d[A-Z][ -]?\d[A-Z]\d$/i};
+  if(patterns[out.country]&&!patterns[out.country].test(out.postal_code))fail(400,'Revisa el formato del código postal.');
+  return out;
+}
 const ORIGIN='https://diluidocognit.store';
 const enc=new TextEncoder();
 const hex=b=>Array.from(new Uint8Array(b),n=>n.toString(16).padStart(2,'0')).join('');
@@ -103,7 +120,7 @@ export async function handle(req,env,now=Date.now()){
   const url=new URL(req.url);const path=url.pathname;
   if(path==='/stripe/webhook'&&req.method==='POST')return webhook(req,env,now);
   if(req.headers.get('origin')!==ORIGIN)fail(403,'Origen no permitido.');
-  if(path==='/config'&&req.method==='GET')return {testMode:true,sitekey:env.TURNSTILE_SITEKEY,products:Object.entries(CATALOG).map(([sku,p])=>({sku,name:p.name,amount:p.amount,currency:'usd',trialDays:sku==='trial'?1:0}))};
+  if(path==='/config'&&req.method==='GET')return {testMode:true,sitekey:env.TURNSTILE_SITEKEY,countries:COUNTRIES,products:Object.entries(CATALOG).map(([sku,p])=>({sku,name:p.name,amount:p.amount,currency:'usd',trialDays:sku==='trial'?1:0}))};
   if(path==='/auth/signup'||path==='/auth/login'){
     if(req.method!=='POST')fail(405,'Método no permitido.');
     await rate(env,`auth:${req.headers.get('CF-Connecting-IP')||'unknown'}`,12,now);
@@ -127,18 +144,26 @@ export async function handle(req,env,now=Date.now()){
   if(path==='/auth/logout'&&req.method==='POST'){
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await sha(req.headers.get('authorization').slice(7))).run();return {ok:true};
   }
+  if(path==='/billing'&&req.method==='GET'){
+    const row=await env.DB.prepare('SELECT b.details FROM order_billing b JOIN orders o ON o.id=b.order_id WHERE o.user_id=? ORDER BY b.updated_at DESC LIMIT 1').bind(user.id).first();
+    return {billing:row?JSON.parse(row.details):null};
+  }
   if(path==='/orders'&&req.method==='GET'){
     const {results}=await env.DB.prepare('SELECT id,sku,status,created_at,updated_at FROM orders WHERE user_id=? ORDER BY created_at DESC LIMIT 50').bind(user.id).all();return {orders:results};
   }
   if(path==='/checkout'&&req.method==='POST'){
     await rate(env,`checkout:${user.id}`,10,now);
     const d=await jsonBody(req);if(!Object.hasOwn(CATALOG,d.sku)||d.testConsent!==true)fail(400,'Elige un servicio y confirma el modo de pruebas.');
+    const billing=validateBilling(d.billing);
     await challenge(req,env,d.turnstile,'checkout');
     const p=CATALOG[d.sku];
     // Resume the same pending order; do not create duplicates after a retry.
     const existing=await env.DB.prepare("SELECT id FROM orders WHERE user_id=? AND sku=? AND status='pending' AND created_at>? ORDER BY created_at DESC LIMIT 1").bind(user.id,d.sku,now-1800000).first();
     const id=existing?.id||crypto.randomUUID();
-    if(!existing)await env.DB.prepare('INSERT INTO orders(id,user_id,sku,created_at,updated_at) VALUES(?,?,?,?,?)').bind(id,user.id,d.sku,now,now).run();
+    const statements=[];
+    if(!existing)statements.push(env.DB.prepare('INSERT INTO orders(id,user_id,sku,created_at,updated_at) VALUES(?,?,?,?,?)').bind(id,user.id,d.sku,now,now));
+    statements.push(env.DB.prepare('INSERT INTO order_billing(order_id,details,updated_at) VALUES(?,?,?) ON CONFLICT(order_id) DO UPDATE SET details=excluded.details,updated_at=excluded.updated_at').bind(id,JSON.stringify(billing),now));
+    await env.DB.batch(statements);
     const target=new URL(p.link);if(!target.pathname.startsWith('/test_'))fail(503,'Checkout no disponible.');
     target.searchParams.set('client_reference_id',id);target.searchParams.set('prefilled_email',user.email);
     return {url:target.href,order:id,testMode:true};
