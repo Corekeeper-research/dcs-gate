@@ -6,7 +6,7 @@ The account flow is an actual Cloudflare Worker + D1 implementation. Stripe-host
 
 ## Deployment state (2026-11-08, Tijuana)
 
-The backend was deployed after account email verification. GET `/config` from the site origin returned the expected test-only catalog and Turnstile sitekey. The eight Node/SQLite tests pass. Frontend publication and end-to-end browser verification follow this deployment; consult the actual GitHub branch/deployment status for the latest state.
+The backend was deployed after account email verification. GET `/config` from the site origin returned the expected test-only catalog and Turnstile sitekey. The eight Node/SQLite tests pass. The frontend is published on GitHub Pages. In the deployed browser, the page loads the catalog and Turnstile completes successfully. Signed deployment probes sent with curl reached the Worker: invalid signature → HTTP400; valid signature → HTTP200; duplicate event → HTTP200. Full account signup and Stripe checkout completion still require an end-to-end user test.
 
 Created resources (identifiers are not secrets):
 
@@ -44,7 +44,7 @@ git diff --check
 
 Tests use SQLite for D1-like query semantics and Web Crypto. They check credential hashing, login/logout, expiration, account isolation, fixed server-side catalog, checkout retry/resume, CORS rejection, required Turnstile token, rate limits, HMAC signature/timestamp validation, webhook retry idempotency, mismatched amount rejection, trial completion, and rejection of live events. Turnstile's provider response is mocked only in unit tests; deployed code always calls Cloudflare Siteverify and checks hostname and action.
 
-These are Node/SQLite tests, not Cloudflare-runtime or end-to-end browser tests. The cloud browser could not reach the local preview (`ERR_CONNECTION_REFUSED`). Actual Turnstile, Stripe Checkout completion, webhook delivery, D1 runtime behavior and mobile rendering still need deployment verification.
+These are Node/SQLite tests, not a full Cloudflare-runtime test suite. Local preview was unreachable from the cloud browser, so the published page was inspected instead. Actual Turnstile succeeded and the deployed configuration endpoint works. Python urllib probes were blocked at the edge; independent curl probes verified rejection of an invalid signature and acceptance/deduplication of a correctly signed probe. Signup, complete Stripe checkout, actual Stripe event delivery and mobile rendering are not yet verified end to end.
 
 ## Operational scope
 
